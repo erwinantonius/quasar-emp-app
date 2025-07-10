@@ -36,7 +36,7 @@
 
                     <q-btn round dense>
                         <q-avatar size="30px" @click="goToProfile()">
-                            <img src="images/no_profile_pink.jpg" />
+                            <img :src="`https://ui-avatars.com/api/?name=${user.fullname}`" :title="user.fullname" />
                         </q-avatar>
                         <q-popup-proxy
                             v-if="$q.screen.gt.sm"
@@ -55,7 +55,7 @@
                                     <div class="text-h6 q-mb-md text-weight-medium">User Profile</div>
                                     <div class="row items-center">
                                         <q-avatar v-if="$q.screen.gt.sm" size="72px" class="q-mr-md">
-                                            <img src="images/no_profile_pink.jpg" />
+                                            <img :src="`https://ui-avatars.com/api/?name=${user.fullname}`" :title="user.fullname" />
                                         </q-avatar>
                                         <div class="col">
                                             <div class="text-subtitle1 text-weight-bold">
@@ -121,7 +121,7 @@
                     ]"
                 >
                     <div v-if="!miniState" class="row items-center q-gutter-md">
-                        <div class="text-h6 text-white"></div>
+                        <div class="text-h6 text-white">Employee Hub</div>
                     </div>
                     <q-btn
                         v-if="$q.screen.gt.xs"
@@ -140,7 +140,7 @@
 
             <div :class="['fixed-bottom ', { 'bg-primary': !$q.dark.isActive }, { 'bg-dark': $q.dark.isActive }]">
                 <q-separator inset />
-                <div class="text-pink-2 text-center text-weight-medium q-py-sm">
+                <div class="text-white text-center text-weight-medium q-py-sm">
                     <span v-show="!miniState">Version</span> {{ currentAppVersion }}
                 </div>
             </div>

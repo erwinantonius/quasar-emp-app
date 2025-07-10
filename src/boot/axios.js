@@ -1,28 +1,28 @@
 import { defineBoot } from '#q-app/wrappers'
 import axios from 'axios'
-import { API_URL } from 'src/config/app.js';
-// Be careful when using SSR for cross-request state pollution
-// due to creating a Singleton instance here;
-// If any client changes this (global) instance, it might be a
-// good idea to move this instance creation inside of the
-// "export default () => {}" function below (which runs individually
-// for each client)
+import { useAuthStore } from 'src/stores/auth'
+import { API_URL } from 'src/config/app.js'
+
 const api = axios.create({
   baseURL: API_URL,
-  headers: { 'Content-Type': 'application/json' }
+  headers: { 'Content-Type': 'application/json' },
 })
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token'); // atau sessionStorage, Pinia store, dsb
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
-  return config;
-});
+api.interceptors.request.use(
+  (config) => {
+    const authStore = useAuthStore()
+    const token = authStore.token
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
 
 api.interceptors.response.use(
   (response) => {
-    return response;
+    return response.data
   },
   (error) => {
     if (error.response && error.response.status === 401) {
@@ -30,11 +30,11 @@ api.interceptors.response.use(
         status: 401,
         message: 'Unauthorized access',
         originalError: error,
-      });
+      })
     }
-    return Promise.reject(error);
-  }
-);
+    return Promise.reject(error)
+  },
+)
 
 export default defineBoot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

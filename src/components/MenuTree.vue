@@ -22,8 +22,8 @@
             'left-menu rounded-md q-my-xs',
             { 'q-mx-xs': miniState },
             { 'child-menu': children },
-            { 'bg-pink-1 text-primary text-weight-medium': currentPath.path === path && !$q.dark.isActive },
-            { 'bg-white-opacity-01 text-primary text-weight-medium': currentPath.path === path && $q.dark.isActive },
+            { 'bg-secondary text-primary text-weight-medium': currentPath.path === path && !$q.dark.isActive },
+            { 'bg-indigo text-white text-weight-medium': currentPath.path === path && $q.dark.isActive },
             { 'text-white': currentPath.path !== path && !$q.dark.isActive },
             { 'text-white': currentPath.path !== path && $q.dark.isActive },
         ]"

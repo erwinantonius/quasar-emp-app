@@ -3,7 +3,7 @@
         <div class="login-container">
             <!-- Background decoration -->
             <div class="login-bg-decoration"></div>
-            
+
             <!-- Login Card -->
             <q-card class="login-card" :class="{ 'mobile-card': $q.screen.lt.md }">
                 <div class="row no-wrap full-height">
@@ -41,7 +41,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Right Panel - Form Section -->
                     <div :class="[$q.screen.gt.sm ? 'col-6' : 'col-12', 'form-panel']">
                         <div class="form-content">
@@ -55,7 +55,7 @@
                                     <p>Welcome back! Please sign in to continue.</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Tab Panels -->
                             <q-tab-panels v-model="panel" animated class="form-panels">
                                 <!-- Login Panel -->
@@ -64,7 +64,7 @@
                                         <h4 v-if="$q.screen.gt.sm" class="panel-title">Welcome Back</h4>
                                         <p class="panel-subtitle">Sign in to your account</p>
                                     </div>
-                                    
+
                                     <q-form @submit.prevent="login" class="login-form">
                                         <div class="form-group">
                                             <label class="form-label">Email Address</label>
@@ -81,7 +81,7 @@
                                                 </template>
                                             </q-input>
                                         </div>
-                                        
+
                                         <div class="form-group">
                                             <label class="form-label">Password</label>
                                             <q-input
@@ -107,19 +107,19 @@
                                                 </template>
                                             </q-input>
                                         </div>
-                                        
+
                                         <div class="form-actions">
-                                            <q-btn 
-                                                flat 
-                                                no-caps 
-                                                size="sm" 
+                                            <q-btn
+                                                flat
+                                                no-caps
+                                                size="sm"
                                                 @click="panel = 'forgot'"
                                                 class="forgot-btn"
                                             >
                                                 Forgot Password?
                                             </q-btn>
                                         </div>
-                                        
+
                                         <q-btn
                                             :loading="isProcessing"
                                             label="Sign In"
@@ -131,14 +131,14 @@
                                         />
                                     </q-form>
                                 </q-tab-panel>
-                                
+
                                 <!-- Forgot Password Panel -->
                                 <q-tab-panel name="forgot" class="forgot-panel">
                                     <div class="panel-header">
                                         <h4 class="panel-title">Reset Password</h4>
                                         <p class="panel-subtitle">Enter your email to receive reset instructions</p>
                                     </div>
-                                    
+
                                     <q-form @submit.prevent="sendResetPassword" class="forgot-form">
                                         <div class="form-group">
                                             <label class="form-label">Email Address</label>
@@ -155,7 +155,7 @@
                                                 </template>
                                             </q-input>
                                         </div>
-                                        
+
                                         <q-btn
                                             :loading="isProcessing"
                                             label="Send Reset Link"
@@ -165,7 +165,7 @@
                                             size="lg"
                                             no-caps
                                         />
-                                        
+
                                         <q-btn
                                             flat
                                             no-caps
@@ -194,10 +194,10 @@ import { useQuasar } from 'quasar';
 import { AuthApi } from 'src/api';
 import { getErrorMessage } from '../utils/error.handle';
 
-const email = ref(null);
-const password = ref(null);
+const email = ref('admin@company.com');
+const password = ref('admin123');
 const isProcessing = ref(false);
-const passwordType = ref<'password' | 'text'>('password');
+const passwordType = ref('password');
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -212,6 +212,7 @@ const login = async () => {
             email: email.value,
             password: password.value,
         });
+
         await router.push({ name: 'home' });
 
         $q.notify({
@@ -221,7 +222,7 @@ const login = async () => {
         isProcessing.value = false;
     } catch (error) {
         isProcessing.value = false;
-        const errorMessage = getErrorMessage(error); 
+        const errorMessage = getErrorMessage(error);
         $q.notify({ type: 'negative', message: errorMessage });
     }
 
@@ -248,6 +249,7 @@ const sendResetPassword = async () => {
 
 onMounted(() => {
     console.log(process.env.NODE_ENV);
+    $q.dark.set(false);
 });
 
 </script>
@@ -513,19 +515,19 @@ background-image: url("https://www.transparenttextures.com/patterns/crissxcross.
     .login-page {
         padding: 10px;
     }
-    
+
     .form-panel {
         padding: 20px;
     }
-    
+
     .panel-title {
         font-size: 1.5rem;
     }
-    
+
     .brand-title {
         font-size: 2rem;
     }
-    
+
     .brand-subtitle {
         font-size: 1.5rem;
     }
@@ -535,15 +537,15 @@ background-image: url("https://www.transparenttextures.com/patterns/crissxcross.
     .login-page {
         padding: 5px;
     }
-    
+
     .form-panel {
         padding: 15px;
     }
-    
+
     .mobile-brand {
         margin-bottom: 20px;
     }
-    
+
     .panel-header {
         margin-bottom: 20px;
     }

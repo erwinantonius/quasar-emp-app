@@ -234,7 +234,7 @@
                         </div>
                     </div>
                     <div v-if="form.length === 1 || simple" class="row justify-end q-gutter-sm">
-                        <q-btn color="secondary" label="Reset" type="reset" />
+                        <q-btn outline color="primary" label="Reset" type="reset" />
                         <q-btn
                             color="primary"
                             label="Search"
@@ -261,149 +261,138 @@
     </q-card>
 </template>
 
-<script>
-import { defineComponent, ref, reactive, watch, onUnmounted } from 'vue';
+<script setup>
+import { reactive, watch, onUnmounted } from 'vue';
 import { date } from 'quasar';
-export default defineComponent({
-    name: 'FilterBox',
-    props: {
-        fields: {
-            type: Array,
-            required: true,
-            default() {
-                return [];
-            },
-        },
-        simple: Boolean,
-        initial: {
-            type: Object,
-            // required: true,
-            default() {
-                return {};
-            },
+
+const props = defineProps({
+    fields: {
+        type: Array,
+        required: true,
+        default() {
+            return [];
         },
     },
-    emits: ['find'],
-    setup(props, { emit }) {
-        const form = reactive([...props.fields]);
-        const dateProxy = ref(null);
-
-        watch(
-            () => props.fields,
-            (newValue) => {
-                // this is make recursive
-                // const makeOver = newValue.map((m) => {
-                //     if (m.type === 'select') {
-                //         m.options_original = [...m.options];
-                //     }
-                //     return m;
-                // });
-
-                // form.value = [...makeOver];
-                form.splice(0, form.length, ...newValue.map((field) => ({ ...field }))); // Deep clone fields
-            },
-            { deep: true },
-        );
-
-        onUnmounted(() => {
-            form.forEach((field) => {
-                if (field.defaultValue !== undefined) {
-                    field.value = field.defaultValue;
-                } else {
-                    delete field.value;
-                }
-            });
-        });
-
-        function clear() {
-            form.forEach((field) => {
-                if (field.defaultValue !== undefined) {
-                    field.value = field.defaultValue;
-                } else {
-                    delete field.value;
-                }
-            });
-            emit('find', props.initial);
-        }
-
-        function filterSelect(val, update, abort, item) {
-            // console.log(item.options_original);
-            // if (val === '') {
-            //     update(() => {
-            //         item.options = item.options_original;
-            //     });
-            //     return;
-            // }
-
-            update(() => {
-                const needle = val.toLocaleLowerCase();
-                item.options = item.options_original.filter(
-                    (v) => v[item.optionLabel].toLocaleLowerCase().indexOf(needle) > -1,
-                );
-            });
-        }
-
-        function fire() {
-            const filter = form.reduce((aggr, curr) => {
-                if (!curr.value && !curr.valueFrom && !curr.valueTo) return aggr;
-
-                switch (curr.type) {
-                    case 'text':
-                        if (curr.operator === 'contains') {
-                            aggr[curr.name] = { $regex: curr.value, $options: 'i' };
-                        } else if (curr.operator === 'or') {
-                            const orConditions = curr.name
-                                .split('.')
-                                .map((field) => ({ [field]: { $regex: curr.value, $options: 'i' } }));
-                            aggr.$or = orConditions;
-                        } else if (curr.operator === 'ne') {
-                            aggr[curr.name] = { $ne: curr.value };
-                        } else {
-                            aggr[curr.name] = curr.value;
-                        }
-                        break;
-
-                    case 'number':
-                        aggr[curr.name] = Number(curr.value);
-                        break;
-
-                    case 'checkbox':
-                        aggr[curr.name] = curr.value;
-                        break;
-
-                    case 'select':
-                        aggr[curr.name] = curr.value;
-                        if (curr.multiple) aggr[curr.name] = { $in: curr.value };
-                        if (curr.operator === 'contains') aggr[curr.name] = { $regex: curr.value, $options: 'i' };
-                        break;
-
-                    case 'multiselect':
-                        aggr[curr.name] = { $in: curr.value };
-                        break;
-
-                    case 'daterange':
-                        aggr[curr.name] = {
-                            $gte: date.startOfDate(curr.valueFrom ?? new Date(), 'day'),
-                            $lte: date.endOfDate(curr.valueTo ?? new Date(), 'day'),
-                        };
-                        break;
-
-                    default:
-                        break;
-                }
-                return aggr;
-            }, {});
-
-            emit('find', filter);
-        }
-
-        return {
-            form,
-            fire,
-            clear,
-            dateProxy,
-            filterSelect,
-        };
+    simple: Boolean,
+    initial: {
+        type: Object,
+        // required: true,
+        default() {
+            return {};
+        },
     },
 });
+
+const emit = defineEmits(['find']);
+
+const form = reactive([...props.fields]);
+
+watch(
+    () => props.fields,
+    (newValue) => {
+        // this is make recursive
+        // const makeOver = newValue.map((m) => {
+        //     if (m.type === 'select') {
+        //         m.options_original = [...m.options];
+        //     }
+        //     return m;
+        // });
+
+        // form.value = [...makeOver];
+        form.splice(0, form.length, ...newValue.map((field) => ({ ...field }))); // Deep clone fields
+    },
+    { deep: true },
+);
+
+onUnmounted(() => {
+    form.forEach((field) => {
+        if (field.defaultValue !== undefined) {
+            field.value = field.defaultValue;
+        } else {
+            delete field.value;
+        }
+    });
+});
+
+const clear = () => {
+    form.forEach((field) => {
+        if (field.defaultValue !== undefined) {
+            field.value = field.defaultValue;
+        } else {
+            delete field.value;
+        }
+    });
+    emit('find', props.initial);
+};
+
+const filterSelect = (val, update, abort, item) => {
+    // console.log(item.options_original);
+    // if (val === '') {
+    //     update(() => {
+    //         item.options = item.options_original;
+    //     });
+    //     return;
+    // }
+
+    update(() => {
+        const needle = val.toLocaleLowerCase();
+        item.options = item.options_original.filter(
+            (v) => v[item.optionLabel].toLocaleLowerCase().indexOf(needle) > -1,
+        );
+    });
+};
+
+const fire = () => {
+    const filter = form.reduce((aggr, curr) => {
+        if (!curr.value && !curr.valueFrom && !curr.valueTo) return aggr;
+
+        switch (curr.type) {
+            case 'text':
+                if (curr.operator === 'contains') {
+                    aggr[curr.name] = { $regex: curr.value, $options: 'i' };
+                } else if (curr.operator === 'or') {
+                    const orConditions = curr.name
+                        .split('.')
+                        .map((field) => ({ [field]: { $regex: curr.value, $options: 'i' } }));
+                    aggr.$or = orConditions;
+                } else if (curr.operator === 'ne') {
+                    aggr[curr.name] = { $ne: curr.value };
+                } else {
+                    aggr[curr.name] = curr.value;
+                }
+                break;
+
+            case 'number':
+                aggr[curr.name] = Number(curr.value);
+                break;
+
+            case 'checkbox':
+                aggr[curr.name] = curr.value;
+                break;
+
+            case 'select':
+                aggr[curr.name] = curr.value;
+                if (curr.multiple) aggr[curr.name] = { $in: curr.value };
+                if (curr.operator === 'contains') aggr[curr.name] = { $regex: curr.value, $options: 'i' };
+                break;
+
+            case 'multiselect':
+                aggr[curr.name] = { $in: curr.value };
+                break;
+
+            case 'daterange':
+                aggr[curr.name] = {
+                    $gte: date.startOfDate(curr.valueFrom ?? new Date(), 'day'),
+                    $lte: date.endOfDate(curr.valueTo ?? new Date(), 'day'),
+                };
+                break;
+
+            default:
+                break;
+        }
+        return aggr;
+    }, {});
+
+    emit('find', filter);
+}
 </script>

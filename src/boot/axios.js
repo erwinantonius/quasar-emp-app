@@ -1,13 +1,40 @@
 import { defineBoot } from '#q-app/wrappers'
 import axios from 'axios'
-
+import { API_URL } from 'src/config/app.js';
 // Be careful when using SSR for cross-request state pollution
 // due to creating a Singleton instance here;
 // If any client changes this (global) instance, it might be a
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
-const api = axios.create({ baseURL: 'https://api.example.com' })
+const api = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' }
+})
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token'); // atau sessionStorage, Pinia store, dsb
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      return Promise.reject({
+        status: 401,
+        message: 'Unauthorized access',
+        originalError: error,
+      });
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default defineBoot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

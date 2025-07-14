@@ -35,11 +35,11 @@
                     />
 
                     <q-btn round dense>
-                        <q-avatar size="30px" @click="goToProfile()">
+                        <q-avatar v-if="user" size="30px" @click="goToProfile()">
                             <img :src="`https://ui-avatars.com/api/?name=${user.fullname}`" :title="user.fullname" />
                         </q-avatar>
                         <q-popup-proxy
-                            v-if="$q.screen.gt.sm"
+                            v-if="$q.screen.gt.sm && user"
                             transition-show="jump-down"
                             transition-hide="jump-up"
                             :offset="[0, 15]"

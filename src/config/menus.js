@@ -8,7 +8,7 @@ const menus = [
   {
     title: 'Tenant',
     icon: 'business_center',
-    path: '/tenant/tenant-list',
+    path: '/tenant',
     roles: ['superadmin'],
   },
   {
@@ -16,6 +16,12 @@ const menus = [
     icon: 'corporate_fare',
     path: '/workplace/workplace-list',
     roles: ['superadmin'],
+  },
+  {
+    title: 'User',
+    icon: 'people',
+    path: '/user/user-list',
+    roles: ['superadmin', 'admin', 'hr'],
   },
   {
     title: 'Preferences',

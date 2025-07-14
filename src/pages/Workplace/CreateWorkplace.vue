@@ -1,25 +1,25 @@
 <template>
-  <q-page padding>
-    <Breadcrumb :title="isEditMode ? 'Edit Workplace' : 'Create Workplace'">
-
-    </Breadcrumb>
+  <div>
+    <!-- Show breadcrumb only when not in dialog mode -->
+    <BreadCrumb v-if="!props.initialData" :title="isEditMode ? 'Edit Workplace' : 'Create Workplace'">
+    </BreadCrumb>
 
     <GenericForm
       :fields="formFields"
-      :title="isEditMode ? 'Edit Workplace Information' : 'Workplace Information'"
+      :title="'Workplace Information'"
       :actions="true"
-      bordered
+      :bordered="!props.initialData"
       @fire="onSubmit"
       @cancel="onCancel"
     />
-  </q-page>
+  </div>
 </template>
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import Breadcrumb from 'components/Breadcrumb.vue';
+import BreadCrumb from 'src/components/BreadCrumb.vue';
 import GenericForm from 'components/GenericForm.vue';
 import { TenantApi, WorkplaceApi } from 'src/api';
 import { WORKPLACE_TYPE } from 'src/config/constant';
@@ -35,31 +35,39 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['workplace-created', 'workplace-updated']);
+const emit = defineEmits(['workplace-created', 'workplace-updated', 'cancel']);
 
 const router = useRouter();
 const $q = useQuasar();
 
 const isEditMode = computed(() => props.editMode);
+const shouldDisableTenant = computed(() => {
+  return isEditMode.value || (props.initialData?.tenant && !isEditMode.value);
+});
 
-const tenantOptions = ref([]);
-
-// Fetch tenant options
-const fetchTenants = async () => {
+// Function to fetch tenant options from API
+const fetchTenantOptions = async () => {
   try {
     const response = await TenantApi.getTenant({
       params: {
-        filter: { is_deleted: { $ne: true } },
+        filter: { deleted: { $ne: true } },
         sort: 'name',
         limit: 1000
       }
     });
-    tenantOptions.value = response.data.map(tenant => ({
+    const tenantOptions = response.data.map(tenant => ({
       label: tenant.name,
       value: tenant._id
     }));
+    const tenantField = formFields.value.find(field => field.name === 'tenant');
+    tenantField.options = tenantOptions;
+    formFields.value = [...formFields.value];
   } catch (error) {
     console.error('Error fetching tenants:', error);
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to load tenant options'
+    });
   }
 };
 
@@ -67,7 +75,7 @@ const formFields = ref([
   {
     name: 'name',
     type: 'text',
-    label: 'Workplace Name *',
+    label: 'Workplace Name',
     required: true,
     col: 6,
     value: '',
@@ -77,20 +85,21 @@ const formFields = ref([
   {
     name: 'tenant',
     type: 'select',
-    label: 'Tenant *',
+    label: 'Tenant',
     required: true,
     col: 6,
     value: '',
     field_style: 'filled',
-    options: tenantOptions,
+    options: [],
     emit_value: true,
     map_options: true,
+    disabled: false,
     error_message: 'Please select tenant'
   },
   {
     name: 'code',
     type: 'text',
-    label: 'Workplace Code *',
+    label: 'Workplace Code',
     required: true,
     col: 6,
     value: '',
@@ -100,7 +109,7 @@ const formFields = ref([
   {
     name: 'type',
     type: 'select',
-    label: 'Workplace Type *',
+    label: 'Workplace Type',
     required: true,
     col: 6,
     value: '',
@@ -113,7 +122,7 @@ const formFields = ref([
   {
     name: 'address',
     type: 'textarea',
-    label: 'Address *',
+    label: 'Address',
     required: true,
     col: 6,
     value: '',
@@ -124,7 +133,7 @@ const formFields = ref([
   {
     name: 'contact_name',
     type: 'text',
-    label: 'Contact Name *',
+    label: 'Contact Name',
     required: true,
     col: 6,
     value: '',
@@ -134,7 +143,7 @@ const formFields = ref([
   {
     name: 'contact_phone',
     type: 'text',
-    label: 'Contact Phone *',
+    label: 'Contact Phone',
     required: true,
     col: 6,
     value: '',
@@ -144,7 +153,7 @@ const formFields = ref([
   {
     name: 'contact_email',
     type: 'email',
-    label: 'Contact Email *',
+    label: 'Contact Email',
     required: true,
     col: 6,
     value: '',
@@ -169,6 +178,11 @@ const populateFormFields = (data) => {
   formFields.value.forEach(field => {
     if (field.name === 'coordinate' && data.coordinate && Array.isArray(data.coordinate)) {
       field.value = data.coordinate.join(', ');
+    } else if (field.name === 'tenant') {
+      // Handle tenant field specially - it might be an object or just an ID
+      if (data.tenant) {
+        field.value = typeof data.tenant === 'object' ? data.tenant._id : data.tenant;
+      }
     } else if (data[field.name] !== undefined) {
       field.value = data[field.name];
     }
@@ -177,19 +191,23 @@ const populateFormFields = (data) => {
 
 // Watch for initial data changes to populate form (for dialog mode)
 watch(() => props.initialData, (newData) => {
-  if (newData && props.editMode) {
+  if (newData) {
     populateFormFields(newData);
   }
 }, { immediate: true });
 
-// Fetch tenants on mount and update tenant field options
-onMounted(async () => {
-  await fetchTenants();
-  // Update tenant field options
-  const tenantField = formFields.value.find(field => field.name === 'tenant');
+// Watch for edit mode or initialData changes to update tenant field disabled state
+watch([isEditMode, () => props.initialData], () => {
+  const tenantField = formFields.value.find(f => f.name === 'tenant');
   if (tenantField) {
-    tenantField.options = tenantOptions;
+    tenantField.disabled = shouldDisableTenant.value;
+    formFields.value = [...formFields.value]; // Force reactivity
   }
+}, { immediate: true });
+
+// Load tenant options when component mounts
+onMounted(async () => {
+  await fetchTenantOptions();
 });
 
 const onSubmit = async (formData) => {
@@ -247,7 +265,7 @@ const onSubmit = async (formData) => {
 
 const onCancel = () => {
   if (props.editMode || props.initialData) {
-    emit('workplace-updated'); // Close dialog
+    emit('cancel'); // Close dialog
   } else {
     router.push({ name: 'workplace-list' });
   }

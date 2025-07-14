@@ -1,42 +1,55 @@
-import { api } from 'boot/axios';
-export default class UserApi {
+import { api } from 'src/boot/axios';
+
+export const UserApi = {
     /**
      * get users list
      * @param {*} payload
      * @returns
      */
-    static async get (payload) {
+    getUser: (payload) => {
         return api.get(`/users`, payload);
-    }
-    static async getById (id) {
+    },
+
+    getById: (id) => {
         return api.get(`/users/${id}`);
-    }
+    },
 
     /**
      * get user count
      * @param {*} payload
      * @returns
      */
-    static async count (payload) {
+    countUser: (payload) => {
         return api.get(`/users/count`, payload);
-    }
+    },
+
     /**
      * create user
      * @param {*} payload
      * @returns
      */
-    static async create (payload) {
+    createUser: (payload) => {
         return api.post('/users', payload);
-    }
+    },
+
     /**
      * update user
      * @param {string} id
      * @param {*} payload
      * @returns
      */
-    static async update (id, payload) {
+    updateUser: (id, payload) => {
         return api.patch(`/users/${id}`, payload);
-    }
+    },
+
+    /**
+     * delete user
+     * @param {string} id
+     * @returns
+     */
+    delete: (id) => {
+        return api.delete(`/users/${id}`);
+    },
 
     /**
      * change password
@@ -44,16 +57,16 @@ export default class UserApi {
      * @param {*} payload
      * @returns
      */
-    static async changePassword (id, payload) {
+    changePassword: (id, payload) => {
         return api.post(`/users/${id}`, payload);
-    }
+    },
 
     /**
      * send email invitation
      * @param {*} payload
      * @returns
      */
-    static async sendInvitation (payload) {
+    sendInvitation: (payload) => {
         return api.post(`/mail/send-invitation`, payload);
     }
-}
+};

@@ -18,10 +18,10 @@
                         </template>
                         <q-breadcrumbs-el to="/" label="Home" />
                         <q-breadcrumbs-el
-                            v-for="(route, i) in $route.matched.filter((f) => f.name)"
+                            v-for="(route, i) in breadcrumbRoutes"
                             :key="i"
-                            :label="route.name?.replace(/-/g, ' ')"
-                            :to="route.path"
+                            :label="route.label"
+                            :to="route.to"
                             class="text-capitalize"
                         />
                     </q-breadcrumbs>
@@ -34,18 +34,71 @@
     </q-card>
 </template>
 
-<script>
-export default {
-    name: 'BreadcrumnComponent',
-    props: {
-        title: {
-            type: String,
-            default: 'Title Here',
-        },
-        bordered: {
-            type: Boolean,
-            default: false,
-        },
+<script setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+
+defineProps({
+    title: {
+        type: String,
+        default: 'Title Here',
     },
-};
+    bordered: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+const route = useRoute();
+
+// Computed property to build correct breadcrumb paths
+const breadcrumbRoutes = computed(() => {
+    const matchedRoutes = route.matched.filter((f) => f.name);
+    const breadcrumbs = [];
+    
+    for (let i = 0; i < matchedRoutes.length; i++) {
+        const matchedRoute = matchedRoutes[i];
+        let routeName = matchedRoute.name;
+        
+        // For nested routes, we need to build the parameters progressively
+        if (routeName === 'tenant' || routeName === 'tenant-list') {
+            // No parameters needed for tenant list
+            breadcrumbs.push({
+                label: matchedRoute.meta?.title || matchedRoute.name?.replace(/-/g, ' '),
+                to: { name: 'tenant-list' }
+            });
+        } else if (routeName === 'tenant-detail') {
+            breadcrumbs.push({
+                label: matchedRoute.meta?.title || matchedRoute.name?.replace(/-/g, ' '),
+                to: { name: 'tenant-detail', params: { tenant_id: route.params.tenant_id } }
+            });
+        } else if (routeName === 'tenant-users') {
+            breadcrumbs.push({
+                label: matchedRoute.meta?.title || matchedRoute.name?.replace(/-/g, ' '),
+                to: { name: 'tenant-users', params: { tenant_id: route.params.tenant_id } }
+            });
+        } else if (routeName === 'tenant-workplaces') {
+            breadcrumbs.push({
+                label: matchedRoute.meta?.title || matchedRoute.name?.replace(/-/g, ' '),
+                to: { name: 'tenant-workplaces', params: { tenant_id: route.params.tenant_id } }
+            });
+        } else if (routeName === 'tenant-workplace') {
+            breadcrumbs.push({
+                label: matchedRoute.meta?.title || matchedRoute.name?.replace(/-/g, ' '),
+                to: { name: 'tenant-workplace', params: { 
+                    tenant_id: route.params.tenant_id,
+                    workplace_id: route.params.workplace_id 
+                }}
+            });
+        } else {
+            // For other routes, use current params
+            breadcrumbs.push({
+                label: matchedRoute.meta?.title || matchedRoute.name?.replace(/-/g, ' '),
+                to: { name: routeName, params: route.params }
+            });
+        }
+    }
+    
+    return breadcrumbs;
+});
 </script>

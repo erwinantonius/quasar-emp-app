@@ -7,12 +7,34 @@
             <q-card-section>
                 <div :class="`row ${gutter}`">
                     <div
-                        v-for="(item, i) in intProps.filter((f) => !f.hidden)"
+                        v-for="(item, i) in intProps"
                         :key="i"
+                        v-show="!item.hidden"
                         :class="[
-                          $q.screen.gt.sm && item.col ? `col-${item.col}` : 'col-12'
+                            { [`col-${item.col}`]: item.col && !item.hidden && $q.screen.gt.sm },
+                            { 'col-12': $q.screen.lt.sm },
                         ]"
                     >
+                        <!-- Silence Mode: Display as labels -->
+                        <div v-if="silence" class="q-field q-field--filled q-field--readonly">
+                            <div class="q-field__inner relative-position col self-stretch">
+                                <div class="q-field__control relative-position row no-wrap">
+                                    <div class="q-field__control-container col relative-position row no-wrap q-anchor--skip">
+                                        <div class="q-field__native row">
+                                            <div class="col">
+                                                <div class="text-caption text-grey-6 q-mb-xs">{{ item.label }}</div>
+                                                <div class="text-body1" :class="{ 'text-grey-5': !item.value && item.value !== 0 }">
+                                                    {{ formatFieldValue(item) }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Normal Mode: Display as input fields -->
+                        <template v-else>
                         <q-input
                             v-if="item.type === 'text'"
                             v-show="!item.hidden"
@@ -24,11 +46,17 @@
                             :dense="inputDense"
                             type="text"
                             :disable="item.disabled"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :mask="item.mask"
                             :hint="item.hint"
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    (val !== null && val !== undefined && val !== '') ||
+                                    item.error_message ||
+                                    'Please type something',
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
@@ -46,11 +74,17 @@
                             :dense="inputDense"
                             type="number"
                             :disable="item.disabled"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :mask="item.mask"
                             :hint="item.hint"
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    (val !== null && val !== undefined && val !== '' && !isNaN(val)) ||
+                                    item.error_message ||
+                                    'Please type something',
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
@@ -68,12 +102,18 @@
                             :dense="inputDense"
                             type="textarea"
                             :disable="item.disabled"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :hint="item.hint"
                             autogrow
                             :input-style="{ minHeight: '20px' }"
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    (val !== null && val !== undefined && val !== '') ||
+                                    item.error_message ||
+                                    'Please type something',
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
@@ -83,26 +123,47 @@
                         <q-input
                             v-if="item.type === 'tel'"
                             v-model="item.value"
+                            :prefix="item.prefix"
                             v-show="!item.hidden"
                             :filled="item.field_style === 'filled'"
                             :borderless="item.field_style === 'borderless'"
                             :outlined="item.field_style === 'outlined'"
                             :standout="item.field_style === 'standout'"
                             :dense="inputDense"
-                            type="text"
+                            type="number"
                             :maxlength="item.size"
                             :disable="item.disabled"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :mask="item.mask"
                             :hint="item.hint"
-                            :rules="getValidationRules(item)"
+                            @update:model-value="(val)=>{
+                                item.value = val.replace(/^0/, '');
+                            }"
+                            :rules="[
+                                (val) =>
+                                    !item.required || (val !== null && val !== undefined && val !== '') || item.error_message || 'Please type something',
+                                (val) => /^[0-9]*$/.test(val) || 'Number Only',
+                                (val) => {
+                                    if (!val || !item.provider_list) return true;
+                                    const cleaned = val.startsWith('0') ? val : '0' + val;
+                                    const prefix = cleaned.slice(0, 4);
+                                    return item.provider_list.includes(prefix) || 'Nomor tidak valid untuk provider Indonesia';
+                                },
+                                (val) => {
+                                if (!val) return true;
+                                const cleaned = val.startsWith('0') ? val : '0' + val;
+                                const len = cleaned.length;
+                                return (len >= 10 && len <= 13) || 'Panjang nomor HP harus 10–13 digit';
+                            }
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
                                 { 'bg-dark-page': $q.dark.isActive },
                             ]"
                         />
+                        
                         <q-input
                             v-if="item.type === 'password'"
                             v-model="item.value"
@@ -114,10 +175,16 @@
                             :dense="inputDense"
                             type="password"
                             :disable="item.disabled"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :hint="item.hint"
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    (val !== null && val !== undefined && val !== '') ||
+                                    item.error_message ||
+                                    'Please type something',
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
@@ -135,17 +202,62 @@
                             :dense="inputDense"
                             type="email"
                             :disable="item.disabled"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :mask="item.mask"
                             :hint="item.hint"
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    (val !== null && val !== undefined && val !== '') ||
+                                    item.error_message ||
+                                    'Please type something',
+                                val => {
+                                    if (!val || !item.required) return true;
+                                    return validateEmail(val) || 'Must be a valid email.';
+                                },
+                                val => {
+                                    if (!val || !item.domain_allowed) return true;
+                                    return validateDomain(val, item.domain_allowed) || 'Company is invalid.';
+                                }
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
                                 { 'bg-dark-page': $q.dark.isActive },
                             ]"
                         />
+                        <q-file
+                        v-if="item.type === 'file'"
+                            v-model="item.value"
+                            :dense="inputDense"
+                            v-show="!item.hidden"
+                            :filled="item.field_style === 'filled'"
+                            :borderless="item.field_style === 'borderless'"
+                            :outlined="item.field_style === 'outlined'"
+                            :standout="item.field_style === 'standout'"
+                            :disable="item.disabled"
+                            :label="item.required ? `${item.label} *` : item.label"
+                            :placeholder="item.placeholder"
+                            :hint="item.hint"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    !!item.value ||
+                                    item.error_message ||
+                                    'Please type something',
+                                 () => !item.value || item.value.size <= 6_000_000 || 'Ukuran maksimal 6MB',
+                                 () => !item.value || ['image/jpeg', 'image/png'].includes(item.value.type) || 'Hanya JPG/PNG yang diperbolehkan'
+                            ]"
+                            :class="[
+                                ' rounded-md',
+                                { 'bg-white': !$q.dark.isActive },
+                                { 'bg-dark-page': $q.dark.isActive },
+                            ]">
+                            <template v-slot:prepend>
+                            <q-icon name="attach_file" />
+                            </template>
+                        </q-file>
                         <q-input
                             v-if="item.type === 'date'"
                             v-model="item.value"
@@ -157,11 +269,18 @@
                             :standout="item.field_style === 'standout'"
                             type="text"
                             :disable="item.disabled"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :hint="item.hint"
                             mask="####-##-##"
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    (val !== null && val !== undefined && val !== '') ||
+                                    item.error_message ||
+                                    'Please type something',
+                                (val) => !val || regexDate.test(val) || 'Invalid date format (YYYY-MM-DD)',
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
@@ -200,16 +319,34 @@
                             :outlined="item.field_style === 'outlined'"
                             :standout="item.field_style === 'standout'"
                             :dense="inputDense"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :hint="item.hint"
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) =>
+                                    !item.required ||
+                                    (val !== null && val !== undefined && val !== '') ||
+                                    item.error_message ||
+                                    'Please type something',
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
                                 { 'bg-dark-page': $q.dark.isActive },
                             ]"
                         />
+                        <div v-if="item.type === 'radio'">
+                            <label class="text-subtitle1 q-pa-sm">{{ item.label }} <span v-if="item.required">*</span></label>
+                            <q-option-group
+                                v-model="item.value"
+                                :option-value="item.option_value"
+                                :option-label="item.option_label"
+                                :options="item.options"
+                                :emit-value="item.emit_value"
+                                :map-options="item.map_options"
+                                :label="item.required ? `${item.label} *` : item.label"
+                            />
+                        </div>
                         <q-select
                             v-if="item.type === 'select'"
                             :use-chips="item.use_chips ? true : false"
@@ -228,13 +365,19 @@
                             :options="item.options"
                             :emit-value="item.emit_value"
                             :map-options="item.map_options"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             :placeholder="item.placeholder"
                             :hint="item.hint"
+                            :clearable="item.filter && item.use_input"
+                            @input-value="(val) => {
+                                if (item.filter && item.use_input) getFilterHandler(item,val)
+                            }"
                             @update:model-value="
-                                (val) => $emit('on-emit-field', { emit_name: item.emit_event, value: val })
+                                (val) => $emit('on-emit-field', { emit_name: item.emit_event, value: val, all_fields: intProps })
                             "
-                            :rules="getValidationRules(item)"
+                            :rules="[
+                                (val) => !item.required || (val !== null && val !== undefined && val !== '') || item.error_message || 'Please select something',
+                            ]"
                             :class="[
                                 ' rounded-md',
                                 { 'bg-white': !$q.dark.isActive },
@@ -245,22 +388,46 @@
                             v-if="item.type === 'checkbox'"
                             keep-color
                             v-model="item.value"
-                            :label="item.label"
+                            :label="item.required ? `${item.label} *` : item.label"
                             @update:model-value="
-                                (val) => $emit('on-emit-field', { emit_name: item.emit_event, value: val })
+                                (val) => $emit('on-emit-field', { emit_name: item.emit_event, value: val, all_fields: intProps })
                             "
                             color="primary"
                         />
+                        <q-toggle
+                            v-if="item.type === 'toggle'"
+                            checked-icon="check"
+                            v-model="item.value"
+                            :label="item.required ? `${item.label} *` : item.label"
+                            @update:model-value="
+                                (val) => $emit('on-emit-field', { emit_name: item.emit_event, value: val, all_fields: intProps })
+                            "
+                            color="primary"
+                            :rules="[
+                                (val) => {
+                                if (!item.required) return true;
+                                if (typeof item.expect_value !== 'undefined') {
+                                    return val === item.expect_value || item.error_message || 'Anda harus menyetujui sebelum melanjutkan';
+                                }
+                                return !!val || item.error_message || 'Anda harus menyetujui sebelum melanjutkan';
+                                }
+                            ]"
+                        />
+                        </template>
                     </div>
                 </div>
             </q-card-section>
-            <q-separator v-if="bottom_border" />
-            <q-card-section v-if="actions">
+            <q-card-section v-if="actions && !silence">
+                <div v-if="use_captcha" class="row justify-center q-mb-xl">
+                    <div ref="recaptchaEl" class="g-recaptcha" :data-sitekey="recaptchaSiteKey"></div>
+                </div>
                 <div class="row justify-end q-gutter-sm">
                     <q-btn v-if="cancelButton" color="primary" label="Cancel" @click="$emit('cancel')" />
-                    <q-space />
-                    <q-btn type="reset" outline color="primary" label="Reset" />
-                    <q-btn type="submit" color="primary" label="Save" :disabled="isFormEmpty" />
+                    <q-btn class="col-xs-12 col-md-2" type="reset"
+                    outline color="grey" label="Reset" />
+                    <q-btn icon="save" class="col-xs-12 col-md-2"
+                    type="submit" color="primary" label="Save"
+                    :disabled="!isFormValid"/>
                 </div>
             </q-card-section>
         </q-form>
@@ -268,12 +435,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+/* global grecaptcha */
+import { onMounted, ref, watch, computed } from 'vue';
 import { useQuasar } from 'quasar';
-const emit = defineEmits(['fire', 'on-emit-field', 'cancel']);
+
+const emit = defineEmits(['fire', 'on-emit-field']);
 const myForm = ref(null);
 const $q = useQuasar();
-const regexDate = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const regexDate = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 const props = defineProps({
     fields: {
         type: Array,
@@ -311,125 +480,93 @@ const props = defineProps({
         default: 'filled',
     },
     bordered: { type: Boolean, default: false },
+    use_captcha: { type: Boolean, default: false },
+    use_multipart: { type: Boolean, default: false },
+    silence: { type: Boolean, default: false },
 });
 
-// Function untuk normalisasi format date
-const normalizeDateValue = (value) => {
-    if (!value) return value;
+let intProps = ref([]);
 
-    // Jika sudah dalam format YYYY-MM-DD, return as is
-    if (typeof value === 'string' && regexDate.test(value)) {
-        return value;
-    }
-
-    // Jika dalam format ISO (dengan T dan Z), ekstrak tanggal saja
-    if (typeof value === 'string' && value.includes('T')) {
-        return value.split('T')[0];
-    }
-
-    // Jika Date object, konversi ke YYYY-MM-DD
-    if (value instanceof Date) {
-        return value.toISOString().split('T')[0];
-    }
-
-    return value;
-};
-
-let intProps = ref(props.fields.map(field => {
-    // Normalisasi nilai date pada inisialisasi
-    if (field.type === 'date' && field.value) {
-        return {
-            ...field,
-            value: normalizeDateValue(field.value)
-        };
-    }
-    return field;
-}));
-
-// Computed property untuk mengecek apakah form kosong
-const isFormEmpty = computed(() => {
-    return intProps.value.filter(field => field.required).every(field => {
-        if (field.type === 'number') {
-            return field.value === null || field.value === undefined || field.value === '';
+// Preprocessing data untuk memformat value date
+const preprocessFields = (fields) => {
+    return fields.map(field => {
+        if (field.type === 'date' && field.value) {
+            // Convert ISO date string to YYYY-MM-DD format
+            if (field.value.includes('T')) {
+                field.value = field.value.split('T')[0];
+            }
         }
-        return !field.value;
+        return field;
     });
+};
+
+watch(
+  () => props.fields,
+  (newVal) => {
+    intProps.value = preprocessFields(JSON.parse(JSON.stringify(newVal))); // deep copy untuk reactive form
+  },
+  { immediate: true }
+);
+
+// Computed untuk mengecek apakah form valid
+const isFormValid = computed(() => {
+    // Cek apakah semua field mandatory terisi
+    const mandatoryFieldsFilled = intProps.value
+        .filter(field => field.required && !field.hidden)
+        .every(field => {
+            if (field.type === 'checkbox') {
+                return field.value === true;
+            } else if (field.type === 'toggle') {
+                if (typeof field.expect_value !== 'undefined') {
+                    return field.value === field.expect_value;
+                }
+                return !!field.value;
+            } else if (field.type === 'file') {
+                return field.value instanceof File;
+            } else if (field.type === 'select' && field.multiple) {
+                return field.value && field.value.length > 0;
+            } else if (field.type === 'number') {
+                return field.value !== null && field.value !== undefined && field.value !== '' && !isNaN(field.value);
+            } else {
+                return field.value !== null && field.value !== undefined && field.value !== '';
+            }
+        });
+    
+    // Cek captcha jika menggunakan captcha
+    const captchaValid = !props.use_captcha || recaptchaToken.value !== null;
+    
+    return mandatoryFieldsFilled && captchaValid;
 });
 
-// Function untuk mendapatkan validation rules berdasarkan tipe field
-const getValidationRules = (item) => {
-    const rules = [];
-
-    // Base required validation
-    if (item.required) {
-        if (item.type === 'number') {
-            rules.push(
-                (val) => val !== null && val !== undefined && val !== '' ||
-                item.error_message || 'Please enter a number'
-            );
-        } else if (item.type === 'select') {
-            rules.push(
-                (val) => !!val || item.error_message || 'Please select something'
-            );
-        } else if (item.type === 'date') {
-            rules.push(
-                (val) => {
-                    const normalizedVal = normalizeDateValue(val);
-                    return (normalizedVal && normalizedVal.length > 0) ||
-                    item.error_message || 'Please select a date';
-                }
-            );
-        } else {
-            rules.push(
-                (val) => (val && val.length > 0) ||
-                item.error_message || 'Please type something'
-            );
+const getFilterHandler = (item, val) =>{
+    if(!item.filter || !item.use_input) return;
+    intProps.value = intProps.value.map(m=>{
+        if(m.name === item.name) {
+            const original_options = props.fields.find(f => f.name === item.name).options;
+            m.options = original_options;
+            const needle = val.toLowerCase();
+            m.options = m.options.filter(f=> f.value.toLowerCase().indexOf(needle)>-1)
+            return m;
         }
-    }
-
-    // Specific validation based on type
-    switch (item.type) {
-        case 'tel':
-            rules.push((val) => !val || /^[0-9]*$/.test(val) || 'Only numbers allowed');
-            break;
-        case 'email':
-            rules.push((val) => !val || validateEmail(val) || 'Must be a valid email.');
-            break;
-        case 'date':
-            rules.push((val) => {
-                if (!val) return true;
-                const normalizedVal = normalizeDateValue(val);
-                return regexDate.test(normalizedVal) || 'Invalid date format';
-            });
-            break;
-        case 'number':
-            rules.push((val) => !val || !isNaN(val) || 'Must be a valid number');
-            break;
-    }
-
-    return rules;
-};
+        return m
+    });
+}
 
 const handleFire = () => {
     myForm.value.validate().then((success) => {
         if (success) {
-            // Convert date strings to proper format before emitting
-            const processedData = intProps.value.map(item => {
-                if (item.type === 'date' && item.value) {
-                    // If it's already a proper date string, keep it as is
-                    if (typeof item.value === 'string' && item.value.includes('T')) {
-                        return item;
-                    }
-                    // Otherwise, convert to ISO format
-                    return {
-                        ...item,
-                        value: item.value + 'T00:00:00.000Z'
-                    };
+            const formData = new FormData();
+            intProps.value.forEach((item) => {
+                if (item.type === 'file' && item.value instanceof File) {
+                    formData.append(item.name, item.value);
+                } else {
+                    formData.append(item.name, item.value);
                 }
-                return item;
             });
-
-            emit('fire', processedData);
+            if (props.use_multipart)
+                emit('fire', formData);
+            else
+                emit('fire', intProps.value);
         } else {
             $q.notify({
                 color: 'red-5',
@@ -451,7 +588,69 @@ const reset = () => {
     myForm.value.resetValidation();
 };
 
-const validateEmail = (email) => {
-    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i.test(email);
+const recaptchaEl = ref(null);
+const recaptchaToken = ref(null);
+let recaptchaSiteKey = null;
+const renderRecaptcha = (G_KEY) => {
+  recaptchaSiteKey = G_KEY;
+  if (typeof grecaptcha !== 'undefined') {
+    grecaptcha.render(recaptchaEl.value, {
+      sitekey: recaptchaSiteKey,
+      callback: (token) => {
+        recaptchaToken.value = token;
+      }
+    });
+  } else {
+    // Retry kalau grecaptcha belum tersedia
+    setTimeout(() => renderRecaptcha(G_KEY), 500);
+  }
 };
+
+const validateEmail = (email) => {
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i.test(email);
+};
+
+const validateDomain = (email, domains_allowed) => {
+    const domain = email.split('@')[1];
+    return domains_allowed.includes(domain);
+};
+
+// Helper function to format field value for display in silence mode
+const formatFieldValue = (item) => {
+    if (!item.value && item.value !== 0) return '-';
+    
+    if (item.type === 'select') {
+        if (item.multiple && Array.isArray(item.value)) {
+            // Handle multiple select
+            const labels = item.value.map(val => {
+                const option = item.options?.find(opt => opt.value === val);
+                return option ? option.label : val;
+            });
+            return labels.length > 0 ? labels.join(', ') : '-';
+        } else {
+            // Handle single select
+            const option = item.options?.find(opt => opt.value === item.value);
+            return option ? option.label : item.value;
+        }
+    } else if (item.type === 'checkbox') {
+        return item.value ? 'Yes' : 'No';
+    } else if (item.type === 'toggle') {
+        return item.value ? 'Enabled' : 'Disabled';
+    } else if (item.type === 'file') {
+        return item.value?.name || '-';
+    } else if (item.type === 'password') {
+        return item.value ? '••••••••' : '-';
+    } else {
+        return item.value.toString();
+    }
+};
+
+onMounted(async () => {
+    console.log(props.silence);
+    if(props.use_captcha)
+    {
+        const { G_KEY } = await import('src/config/app.js');
+        renderRecaptcha(G_KEY);
+    }
+});
 </script>

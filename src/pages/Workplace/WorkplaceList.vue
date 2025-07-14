@@ -1,18 +1,18 @@
 <template>
     <q-page padding>
-        <Breadcrumb title="Workplace">
+        <BreadCrumb title="Workplace">
             <template #right>
                 <div v-if="$q.screen.gt.sm">
                     <q-btn
-                        v-if="permission.permission.includes('workplace:create:create_workplace')"
+                        v-if="permission.permission.includes('workplace:create:create_workplacess')"
                         color="primary"
                         icon="add"
-                        label="Create Workplace"
+                        label="Create"
                         @click="openCreateDialog()"
                     />
                 </div>
             </template>
-        </Breadcrumb>
+        </BreadCrumb>
         <FilterBox :fields="filterBox" @find="findFilter" bordered :initial="initialFilter" />
         <q-table
             flat
@@ -74,10 +74,12 @@
                             flat
                             round
                             dense
-                            color="negative"
-                            icon="sym_o_delete"
-                            @click="onCancel(props.row)"
-                        />
+                            color="primary"
+                            icon="group"
+                            @click="navigateToWorkplaceUsers(props.row)"
+                        >
+                            <q-tooltip>View Users</q-tooltip>
+                        </q-btn>
                         <q-btn
                             dense
                             round
@@ -86,7 +88,19 @@
                             icon="edit"
                             :disable="!permission.permission.includes('workplace:update:update_workplace')"
                             @click="onEdit(props.row)"
-                        />
+                        >
+                            <q-tooltip>Edit Workplace</q-tooltip>
+                        </q-btn>
+                        <q-btn
+                            flat
+                            round
+                            dense
+                            color="negative"
+                            icon="sym_o_delete"
+                            @click="onCancel(props.row)"
+                        >
+                            <q-tooltip>Delete Workplace</q-tooltip>
+                        </q-btn>
                     </div>
                 </q-td>
             </template>
@@ -110,7 +124,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
-import Breadcrumb from 'components/Breadcrumb.vue';
+import { useRouter } from 'vue-router';
+import BreadCrumb from 'src/components/BreadCrumb.vue';
 import CreateWorkplace from './CreateWorkplace.vue';
 import FilterBox from 'src/components/FilterBox.vue';
 import { date } from 'quasar';
@@ -121,6 +136,7 @@ import HeaderCardSection from 'src/components/HeaderCardSection.vue';
 import { WORKPLACE_TYPE } from 'src/config/constant';
 
 const $q = useQuasar();
+const router = useRouter();
 const authStore = useAuthStore();
 const permission = computed(() => authStore.permission);
 const visibleColumns = ref([
@@ -146,7 +162,7 @@ const fetchTenants = async () => {
   try {
     const response = await TenantApi.getTenant({
       params: {
-        filter: { is_deleted: { $ne: true } },
+        filter: { deleted: { $ne: true } },
         sort: 'name',
         limit: 1000
       }
@@ -161,7 +177,7 @@ const fetchTenants = async () => {
 };
 const pagination = ref({
     filter: {
-        is_deleted: {
+        deleted: {
             $ne: true,
         },
     },
@@ -252,8 +268,8 @@ const filterBox = [
         type: 'select',
         label: 'Tenant',
         options: tenantOptions,
-        emitValue: true,
-        mapOptions: true
+        emit_value: true,
+        map_options: true
     },
     { name: 'address', type: 'text', label: 'Address', operator: 'contains' },
     {
@@ -261,15 +277,15 @@ const filterBox = [
         type: 'select',
         label: 'Type',
         options: WORKPLACE_TYPE,
-        emitValue: true,
-        mapOptions: true
+        emit_value: true,
+        map_options: true
     },
     { name: 'contact_name', type: 'text', label: 'Contact Name', operator: 'contains' },
     { name: 'contact_phone', type: 'text', label: 'Contact Phone', operator: 'contains' },
     { name: 'contact_email', type: 'text', label: 'Contact Email', operator: 'contains' },
 ];
 const initialFilter = reactive({
-        is_deleted: {
+        deleted: {
             $ne: true,
         },
     });
@@ -282,7 +298,6 @@ const onRequest = (props) => {
 
 const findFilter = (e) => {
     pagination.value.filter = e;
-    console.log(e);
     getData(1, pagination.value.rowsPerPage, '-created_at');
 };
 
@@ -369,7 +384,19 @@ const onCancel = (row) => {
         });
 };
 
-onMounted(() => {
+// Navigation function
+const navigateToWorkplaceUsers = (workplace) => {
+    console.log('Navigating to workplace users:', workplace);
+    router.push({ 
+        name: 'tenant-users', 
+        params: { 
+            tenant_id: workplace.tenant._id,
+            workplace_id: workplace._id
+        } 
+    });
+};
+
+onMounted(async () => {
     getData(1, pagination.value.rowsPerPage, '-created_at');
     fetchTenants();
 });

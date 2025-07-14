@@ -1,8 +1,8 @@
 <template>
   <q-page padding>
-    <Breadcrumb :title="isEditMode ? 'Edit Tenant' : 'Create Tenant'">
+    <BreadCrumb :title="isEditMode ? 'Edit Tenant' : 'Create Tenant'">
 
-    </Breadcrumb>
+    </BreadCrumb>
 
     <GenericForm
       :fields="formFields"
@@ -19,7 +19,7 @@
 import { ref, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import Breadcrumb from 'components/Breadcrumb.vue';
+import BreadCrumb from 'src/components/BreadCrumb.vue';
 import GenericForm from 'components/GenericForm.vue';
 import { TenantApi } from 'src/api';
 import { PAYMENT_METHOD } from 'src/config/constant';
@@ -46,7 +46,7 @@ const formFields = ref([
   {
     name: 'name',
     type: 'text',
-    label: 'Tenant Name *',
+    label: 'Tenant Name',
     required: true,
     col: 6,
     value: '',
@@ -56,7 +56,7 @@ const formFields = ref([
   {
     name: 'address',
     type: 'textarea',
-    label: 'Address *',
+    label: 'Address',
     required: true,
     col: 6,
     value: '',
@@ -67,7 +67,7 @@ const formFields = ref([
   {
     name: 'payment_method',
     type: 'select',
-    label: 'Payment Method *',
+    label: 'Payment Method',
     required: true,
     col: 6,
     value: '',
@@ -80,7 +80,7 @@ const formFields = ref([
   {
     name: 'contact_name',
     type: 'text',
-    label: 'Contact Name *',
+    label: 'Contact Name',
     required: true,
     col: 6,
     value: '',
@@ -90,7 +90,7 @@ const formFields = ref([
   {
     name: 'contact_phone',
     type: 'text',
-    label: 'Contact Phone *',
+    label: 'Contact Phone',
     required: true,
     col: 6,
     value: '',
@@ -100,7 +100,7 @@ const formFields = ref([
   {
     name: 'contact_email',
     type: 'email',
-    label: 'Contact Email *',
+    label: 'Contact Email',
     required: true,
     col: 6,
     value: '',
@@ -121,7 +121,7 @@ const formFields = ref([
   {
     name: 'user_seat',
     type: 'number',
-    label: 'User Seats *',
+    label: 'User Seats',
     required: true,
     col: 6,
     value: '',
@@ -131,10 +131,10 @@ const formFields = ref([
   {
     name: 'charge_amount',
     type: 'number',
-    label: 'Charge Amount per Seat (IDR) *',
+    label: 'Charge Amount per Seat (IDR)',
     required: true,
     col: 6,
-    value: 100000,
+    value: 20000,
     field_style: 'filled',
     error_message: 'Please enter charge amount per seat'
   },

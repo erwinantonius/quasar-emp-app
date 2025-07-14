@@ -1,18 +1,18 @@
 <template>
     <q-page padding>
-        <Breadcrumb title="Tenant">
+        <BreadCrumb title="Tenant">
             <template #right>
                 <div v-if="$q.screen.gt.sm">
                     <q-btn
                         v-if="permission.permission.includes('tenant:create:create_tenant')"
                         color="primary"
                         icon="add"
-                        label="Create Tenant"
+                        label="Create"
                         @click="openCreateDialog()"
                     />
                 </div>
             </template>
-        </Breadcrumb>
+        </BreadCrumb>
         <FilterBox :fields="filterBox" @find="findFilter" bordered :initial="initialFilter" />
         <q-table
             flat
@@ -55,10 +55,22 @@
                             flat
                             round
                             dense
-                            color="negative"
-                            icon="sym_o_delete"
-                            @click="onCancel(props.row)"
-                        />
+                            color="primary"
+                            icon="group"
+                            @click="navigateToTenantUsers(props.row._id)"
+                        >
+                            <q-tooltip>View Users</q-tooltip>
+                        </q-btn>
+                        <q-btn
+                            flat
+                            round
+                            dense
+                            color="primary"
+                            icon="business"
+                            @click="navigateToTenantWorkplaces(props.row._id)"
+                        >
+                            <q-tooltip>View Workplaces</q-tooltip>
+                        </q-btn>
                         <q-btn
                             dense
                             round
@@ -67,7 +79,19 @@
                             icon="edit"
                             :disable="!permission.permission.includes('tenant:update:update_tenant')"
                             @click="onEdit(props.row)"
-                        />
+                        >
+                            <q-tooltip>Edit Tenant</q-tooltip>
+                        </q-btn>
+                        <q-btn
+                            flat
+                            round
+                            dense
+                            color="negative"
+                            icon="sym_o_delete"
+                            @click="onCancel(props.row)"
+                        >
+                            <q-tooltip>Delete Tenant</q-tooltip>
+                        </q-btn>
                     </div>
                 </q-td>
             </template>
@@ -91,7 +115,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
-import Breadcrumb from 'components/Breadcrumb.vue';
+import { useRouter } from 'vue-router';
+import BreadCrumb from 'src/components/BreadCrumb.vue';
 import CreateTenant from './CreateTenant.vue';
 import FilterBox from 'src/components/FilterBox.vue';
 import { date } from 'quasar';
@@ -102,6 +127,7 @@ import HeaderCardSection from 'src/components/HeaderCardSection.vue';
 import { PAYMENT_METHOD } from 'src/config/constant';
 
 const $q = useQuasar();
+const router = useRouter();
 const authStore = useAuthStore();
 const permission = computed(() => authStore.permission);
 const visibleColumns = ref([
@@ -340,6 +366,15 @@ const onCancel = (row) => {
         .onOk(() => {
             return doCancel(row._id);
         });
+};
+
+// Navigation functions
+const navigateToTenantUsers = (tenantId) => {
+    router.push({ name: 'tenant-users', params: { tenant_id: tenantId } });
+};
+
+const navigateToTenantWorkplaces = (tenantId) => {
+    router.push({ name: 'tenant-workplaces', params: { tenant_id: tenantId } });
 };
 
 onMounted(() => {

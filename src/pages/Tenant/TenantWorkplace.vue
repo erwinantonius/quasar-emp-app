@@ -2,11 +2,18 @@
   <q-page padding>
     <BreadCrumb :title="`Workplaces - ${tenantName}`">
       <template #right>
-        <q-btn
+        <!-- <q-btn
           color="primary"
           icon="add"
           label="Add Workplace"
           @click="openCreateDialog"
+          class="q-mr-sm"
+        /> -->
+        <q-btn
+          color="primary"
+          icon="open_in_new"
+          label="Add Workplace"
+          @click="navigateToCreatePage"
         />
       </template>
     </BreadCrumb>
@@ -83,6 +90,7 @@
             @workplace-created="handleWorkplaceCreated"
             @workplace-updated="handleWorkplaceUpdated"
             @cancel="showDialog = false"
+            :action="true"
           />
         </q-card-section>
       </q-card>
@@ -367,16 +375,19 @@ const handleSearch = (filterData) => {
 };
 
 // Dialog functions
-const openCreateDialog = () => {
-  editMode.value = false;
-  selectedWorkplace.value = { tenant: tenantId.value }; // Pre-fill tenant
-  showDialog.value = true;
-};
+// const openCreateDialog = () => {
+//   editMode.value = false;
+//   selectedWorkplace.value = { tenant: tenantId.value }; // Pre-fill tenant
+//   showDialog.value = true;
+// };
 
 const openEditDialog = (workplace) => {
-  editMode.value = true;
-  selectedWorkplace.value = { ...workplace };
-  showDialog.value = true;
+  // Navigate to edit workplace page
+  router.push({
+    name: 'edit-workplace-page',
+    params: { id: workplace._id },
+    query: { tenant_id: route.params.tenant_id }
+  });
 };
 
 const handleWorkplaceCreated = () => {
@@ -429,6 +440,16 @@ const navigateToWorkplaceUsers = (workplace) => {
       tenant_id: tenantId.value,
       workplace_id: workplace._id
     } 
+  });
+};
+
+// Navigate to create workplace page
+const navigateToCreatePage = () => {
+  router.push({ 
+    name: 'create-workplace-page',
+    query: { 
+      tenant_id: tenantId.value
+    }
   });
 };
 

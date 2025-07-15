@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isLoggedIn: (state) => !!state.token,
-    isSuperadmin(state) {
+    isSuperadmin (state) {
       return state.user?.roles?.includes('superadmin')
     },
   },
@@ -23,13 +23,13 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Initialize store with router reference
      */
-    init(router) {
+    init (router) {
       this.router = router
     },
     /**
      * logout reset app store
      */
-    async login(payload) {
+    async login (payload) {
       try {
         const { data } = await AuthApi.signIn(payload)
         this.setPermission(data.permission)
@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', {
         throw err?.response?.data?.message || err
       }
     },
-    logout() {
+    logout () {
       getActivePinia()._s.forEach((store) => store.$reset())
       // Redirect to login page after logout
       if (this.router) {
@@ -55,31 +55,28 @@ export const useAuthStore = defineStore('auth', {
      * set user state
      * @param {object} payload
      */
-    setUser(payload) {
+    setUser (payload) {
       this.user = payload
       this.setCurrentWorkplace(payload.workplace)
     },
-    setPermission(payload) {
+    setPermission (payload) {
       this.permission = { permission: payload }
     },
-    setCurrentWorkplace(payload) {
+    setCurrentWorkplace (payload) {
       this.currentWorkplace = payload
-    },
-    setPickingMode(pickingMode) {
-      this.pickingMode = pickingMode
     },
     /**
      * set token state
      * @param {string} payload
      */
-    setToken(payload) {
+    setToken (payload) {
       this.token = payload
     },
     /**
      * set token state
      * @param {object} payload
      */
-    setTokens(payload) {
+    setTokens (payload) {
       this.token = payload.accessToken
       this.refreshToken = payload.refreshToken
     },

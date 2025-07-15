@@ -115,6 +115,7 @@
                         :initial-data="selectedWorkplace"
                         @workplace-created="handleWorkplaceCreated"
                         @workplace-updated="handleWorkplaceUpdated"
+                        :action="true"
                     />
                 </q-card-section>
             </q-card>
@@ -340,9 +341,11 @@ const openCreateDialog = () => {
 };
 
 const onEdit = (row) => {
-    editMode.value = true;
-    selectedWorkplace.value = { ...row };
-    createDialog.value = true;
+    // Navigate to edit workplace page
+    router.push({
+        name: 'edit-workplace-page',
+        params: { id: row._id }
+    });
 };
 
 const handleWorkplaceCreated = () => {

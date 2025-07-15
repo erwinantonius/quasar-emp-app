@@ -24,6 +24,18 @@ const routes = [
     ],
   },
   {
+    path: '/attendance',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'attendance-tick',
+        path: 'tick',
+        component: () => import('pages/Attendance/AttendanceTick.vue'),
+        meta: { requireAuth: true },
+      },
+    ],
+  },
+  {
     path: '/workplace',
     component: () => import('layouts/MainLayout.vue'),
     children: [
@@ -40,6 +52,12 @@ const routes = [
         meta: { requireAuth: true, roles: ['superadmin'] }, // ⬅️ ini penting
       },
       {
+        name: 'create-workplace-page',
+        path: 'create-workplace-page',
+        component: () => import('pages/Workplace/CreateWorkplacePage.vue'),
+        meta: { requireAuth: true, roles: ['superadmin'] },
+      },
+      {
         name: 'workplace-detail',
         path: 'workplace-detail/:id',
         component: () => import('pages/Workplace/CreateWorkplace.vue'),
@@ -50,6 +68,12 @@ const routes = [
         path: 'workplace-edit/:id',
         component: () => import('pages/Workplace/CreateWorkplace.vue'),
         meta: { requireAuth: true, roles: ['superadmin'] }, // ⬅️ ini penting
+      },
+      {
+        name: 'edit-workplace-page',
+        path: 'edit-workplace-page/:id',
+        component: () => import('pages/Workplace/CreateWorkplacePage.vue'),
+        meta: { requireAuth: true, roles: ['superadmin'] },
       },
     ],
   },
@@ -107,6 +131,12 @@ const routes = [
         meta: { requireAuth: true, roles: ['superadmin', 'admin', 'hr'] },
       },
       {
+        name: 'create-user-page',
+        path: 'create-user-page',
+        component: () => import('pages/User/CreateUserPage.vue'),
+        meta: { requireAuth: true, roles: ['superadmin', 'admin', 'hr'] },
+      },
+      {
         name: 'user-detail',
         path: 'user-detail/:id',
         component: () => import('pages/User/CreateUser.vue'),
@@ -117,6 +147,18 @@ const routes = [
         path: 'user-edit/:id',
         component: () => import('pages/User/CreateUser.vue'),
         meta: { requireAuth: true, roles: ['superadmin', 'admin', 'hr'] },
+      },
+    ],
+  },
+  {
+    path: '/profile',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'profile',
+        path: '/profile',
+        component: () => import('pages/ProfilePage.vue'),
+        meta: { requireAuth: true },
       },
     ],
   },

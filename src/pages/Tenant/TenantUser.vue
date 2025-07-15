@@ -2,12 +2,15 @@
   <q-page padding>
     <BreadCrumb :title="breadcrumbTitle">
       <template #right>
-        <q-btn
-          color="primary"
-          icon="add"
-          label="Add User"
-          @click="openCreateDialog"
-        />
+        <div class="q-gutter-sm">
+          <!-- Page Mode Button -->
+          <q-btn
+            color="primary"
+            icon="open_in_new"
+            label="Add User"
+            @click="navigateToCreateUserPage"
+          />
+        </div>
       </template>
     </BreadCrumb>
 
@@ -87,6 +90,7 @@
             @user-created="handleUserCreated"
             @user-updated="handleUserUpdated"
             @cancel="showDialog = false"
+            :action="true"
           />
         </q-card-section>
       </q-card>
@@ -112,7 +116,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import BreadCrumb from 'src/components/BreadCrumb.vue';
 import FilterBox from 'components/FilterBox.vue';
@@ -121,6 +125,7 @@ import { UserApi, TenantApi, WorkplaceApi } from 'src/api';
 import { CONTRACT_TYPE, USER_ROLES, GENDER_OPTIONS } from 'src/config/constant';
 
 const route = useRoute();
+const router = useRouter();
 const $q = useQuasar();
 
 // Get tenant_id and workplace_id from route params  
@@ -403,18 +408,19 @@ const handleSearch = (filterData) => {
   fetchUsers();
 };
 
-// Dialog functions
-const openCreateDialog = () => {
-  editMode.value = false;
-  const userData = { tenant: tenantId.value }; // Pre-fill tenant
+// Navigate to CreateUserPage (page mode)
+const navigateToCreateUserPage = () => {
+  const query = { tenant_id: tenantId.value };
   
-  // Also pre-fill workplace if we're in a workplace context
+  // Add workplace_id to query if we're in a workplace context
   if (workplaceId.value) {
-    userData.workplace = workplaceId.value;
+    query.workplace_id = workplaceId.value;
   }
   
-  selectedUser.value = userData;
-  showDialog.value = true;
+  router.push({
+    name: 'create-user-page',
+    query
+  });
 };
 
 const openEditDialog = (user) => {

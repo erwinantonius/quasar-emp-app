@@ -7,8 +7,8 @@
     <GenericForm
       :fields="formFields"
       :title="'Workplace Information'"
-      :actions="true"
-      :bordered="!props.initialData"
+      :actions="props.action"
+      :field_style="'outlined'"
       @fire="onSubmit"
       @cancel="onCancel"
     />
@@ -32,6 +32,18 @@ const props = defineProps({
   initialData: {
     type: Object,
     default: null
+  },
+  externalCoordinates: {
+    type: Array,
+    default: null
+  },
+  externalRadius: {
+    type: Number,
+    default: null
+  },
+  action:{
+    type: Boolean,
+    default: false // 'create' or 'edit'
   }
 });
 
@@ -79,7 +91,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     error_message: 'Please enter workplace name'
   },
   {
@@ -89,7 +101,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     options: [],
     emit_value: true,
     map_options: true,
@@ -103,7 +115,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     error_message: 'Please enter workplace code'
   },
   {
@@ -113,7 +125,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     options: WORKPLACE_TYPE,
     emit_value: true,
     map_options: true,
@@ -126,7 +138,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     rows: 3,
     error_message: 'Please enter address'
   },
@@ -137,7 +149,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     error_message: 'Please enter contact name'
   },
   {
@@ -147,7 +159,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     error_message: 'Please enter contact phone'
   },
   {
@@ -157,7 +169,7 @@ const formFields = ref([
     required: true,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     error_message: 'Please enter a valid email address'
   },
   {
@@ -167,9 +179,21 @@ const formFields = ref([
     required: false,
     col: 6,
     value: '',
-    field_style: 'filled',
+    field_style: 'outlined',
     placeholder: 'e.g., [-6.2088, 106.8456]',
     hint: 'Enter latitude and longitude separated by comma'
+  },
+  {
+    name: 'attendance_radius',
+    type: 'number',
+    label: 'Attendance Radius (meters)',
+    required: false,
+    col: 6,
+    value: 100,
+    field_style: 'outlined',
+    min: 1,
+    max: 10000,
+    hint: 'Radius for attendance validation'
   }
 ]);
 
@@ -205,9 +229,38 @@ watch([isEditMode, () => props.initialData], () => {
   }
 }, { immediate: true });
 
+// Watch for external coordinates and radius changes to update form fields
+watch([() => props.externalCoordinates, () => props.externalRadius], ([newCoordinates, newRadius]) => {
+  let fieldsUpdated = false;
+  
+  // Update coordinate field if external coordinates provided
+  if (newCoordinates && Array.isArray(newCoordinates) && newCoordinates.length >= 2) {
+    const coordinateField = formFields.value.find(f => f.name === 'coordinate');
+    if (coordinateField) {
+      coordinateField.value = newCoordinates.join(', ');
+      fieldsUpdated = true;
+    }
+  }
+  
+  // Update radius field if external radius provided
+  if (newRadius !== null && newRadius !== undefined && newRadius > 0) {
+    const radiusField = formFields.value.find(f => f.name === 'attendance_radius');
+    if (radiusField) {
+      radiusField.value = newRadius;
+      fieldsUpdated = true;
+    }
+  }
+  
+  // Force reactivity only if fields were updated
+  if (fieldsUpdated) {
+    formFields.value = [...formFields.value];
+  }
+}, { immediate: true, deep: true });
+
 // Load tenant options when component mounts
 onMounted(async () => {
   await fetchTenantOptions();
+  console.log(props.action)
 });
 
 const onSubmit = async (formData) => {
@@ -218,7 +271,7 @@ const onSubmit = async (formData) => {
     const workplaceData = {};
     formData.forEach(field => {
       if (field.name === 'coordinate' && field.value) {
-        // Parse coordinates
+        // Parse coordinates from text input (for dialog mode)
         const coords = field.value.split(',').map(coord => parseFloat(coord.trim()));
         if (coords.length === 2 && !coords.some(isNaN)) {
           workplaceData[field.name] = coords;
@@ -227,6 +280,16 @@ const onSubmit = async (formData) => {
         workplaceData[field.name] = field.value;
       }
     });
+
+    // Use external coordinates if provided (for page mode with map)
+    if (props.externalCoordinates && Array.isArray(props.externalCoordinates)) {
+      workplaceData.coordinate = props.externalCoordinates;
+    }
+    
+    // Use external radius if provided (for page mode with map)
+    if (props.externalRadius !== null && props.externalRadius !== undefined) {
+      workplaceData.attendance_radius = props.externalRadius;
+    }
 
     if (isEditMode.value) {
       // Update existing workplace

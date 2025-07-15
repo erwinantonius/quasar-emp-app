@@ -36,7 +36,7 @@
 
                     <q-btn round dense>
                         <q-avatar v-if="user" size="30px" @click="goToProfile()">
-                            <img :src="`https://ui-avatars.com/api/?name=${user.fullname}`" :title="user.fullname" />
+                            <img :src="avatarUrl" :title="profile.fullname" />
                         </q-avatar>
                         <q-popup-proxy
                             v-if="$q.screen.gt.sm && user"
@@ -164,25 +164,28 @@
 import { ref, onBeforeMount, computed, onMounted } from 'vue';
 import MenuTree from 'src/components/MenuTree.vue';
 import { useAuthStore } from 'stores/auth';
+import { useUserStore } from 'stores/user';
 import { useSettingStore } from 'stores/setting';
 import { menus } from 'src/config/menus.js';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { FIREBASE_CONFIG } from 'src/config/firebase';
-import { UserApi, AuthApi } from 'src/api';
+import { UserApi } from 'src/api';
 
 import { messaging } from 'boot/firebase';
 import { onMessage } from 'firebase/messaging';
 import { APP_VERSION } from 'src/config/app';
 
 const authStore = useAuthStore();
+const userStore = useUserStore();
 const settingStore = useSettingStore();
 const router = useRouter();
 const $q = useQuasar();
 
 const leftDrawerOpen = ref(false);
 const user = computed(() => authStore.user);
+const profile = computed(() => userStore.profile);
 const myMenu = computed(() =>
     menus
         .map((m) => {
@@ -290,6 +293,16 @@ const changeTheme = () => {
     $q.dark.set(settingStore.darkTheme);
 };
 
+// Computed avatar URL using Dicebear API
+const avatarUrl = computed(() => {
+  if (profile.value) {
+    const fullName = `${profile.value.first_name || ''} ${profile.value.last_name || ''}`.trim();
+    const seed = encodeURIComponent(fullName || profile.value.email || 'default');
+    return profile.value.photo || `https://api.dicebear.com/7.x/avataaars/png?seed=${seed}&size=200`;
+  }
+  return '';
+});
+
 onBeforeMount(async () => {
     window.addEventListener('scroll', handleScroll);
     await Notification.requestPermission().then(async (permission) => {
@@ -299,7 +312,7 @@ onBeforeMount(async () => {
             await getToken(msg, { vapidKey: FIREBASE_CONFIG.vapId })
                 .then(async (currentToken) => {
                     if (currentToken) {
-                        await UserApi.update(user.value._id, { fcm_token: currentToken });
+                        await UserApi.updateUser(user.value._id, { fcm_token: currentToken });
                     } else {
                         console.log('No registration token available. Request permission to generate one.');
                     }
@@ -324,8 +337,7 @@ onBeforeMount(async () => {
             classes: 'glossy',
         });
     });
-
-    AuthApi.whoAmI();
+    await userStore.whoAmI();
 });
 
 onMounted(async () => {

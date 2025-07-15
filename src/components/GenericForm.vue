@@ -12,7 +12,7 @@
                         v-show="!item.hidden"
                         :class="[
                             { [`col-${item.col}`]: item.col && !item.hidden && $q.screen.gt.sm },
-                            { 'col-12': $q.screen.lt.sm },
+                            { 'col-12': $q.screen.lt.md },
                         ]"
                     >
                         <!-- Silence Mode: Display as labels -->
@@ -439,7 +439,7 @@
 import { onMounted, ref, watch, computed } from 'vue';
 import { useQuasar } from 'quasar';
 
-const emit = defineEmits(['fire', 'on-emit-field']);
+const emit = defineEmits(['fire', 'on-emit-field', 'on-data-field-change']);
 const myForm = ref(null);
 const $q = useQuasar();
 const regexDate = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
@@ -503,10 +503,17 @@ const preprocessFields = (fields) => {
 watch(
   () => props.fields,
   (newVal) => {
-    intProps.value = preprocessFields(JSON.parse(JSON.stringify(newVal))); // deep copy untuk reactive form
+    intProps.value = preprocessFields(JSON.parse(JSON.stringify(newVal))); // deep copy untuk reactive form 
   },
   { immediate: true }
 );
+
+watch(() => intProps.value,
+   (newVal) => { 
+    emit('on-data-field-change', newVal);
+   },
+   { immediate: false, deep: true }
+ );
 
 // Computed untuk mengecek apakah form valid
 const isFormValid = computed(() => {
@@ -552,8 +559,8 @@ const getFilterHandler = (item, val) =>{
     });
 }
 
-const handleFire = () => {
-    myForm.value.validate().then((success) => {
+const handleFire = async () => {
+    return myForm.value.validate().then((success) => {
         if (success) {
             const formData = new FormData();
             intProps.value.forEach((item) => {
@@ -564,9 +571,9 @@ const handleFire = () => {
                 }
             });
             if (props.use_multipart)
-                emit('fire', formData);
+                { emit('fire', formData); return formData; }
             else
-                emit('fire', intProps.value);
+                { emit('fire', intProps.value); return intProps.value; }
         } else {
             $q.notify({
                 color: 'red-5',
@@ -574,6 +581,7 @@ const handleFire = () => {
                 icon: 'warning',
                 message: 'There is something missing, please check the input form',
             });
+            return null;
         }
     });
 };
@@ -645,8 +653,13 @@ const formatFieldValue = (item) => {
     }
 };
 
+// expose ke parent
+defineExpose({
+  handleFire,
+  fields: intProps,
+})
+
 onMounted(async () => {
-    console.log(props.silence);
     if(props.use_captcha)
     {
         const { G_KEY } = await import('src/config/app.js');

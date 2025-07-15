@@ -5,9 +5,10 @@
     </BreadCrumb>
 
     <GenericForm
+      ref="genericFormRef"
       :fields="formFields"
       :title="'User Information'"
-      :actions="true"
+      :actions="props.action"
       :bordered="!props.initialData"
       @fire="onSubmit"
       @cancel="onCancel"
@@ -32,8 +33,14 @@ const props = defineProps({
   initialData: {
     type: Object,
     default: null
+  },
+  action: {
+    type: Boolean,
+    default: false // 'create' or 'edit'
   }
 });
+
+const genericFormRef = ref(null)
 
 const emit = defineEmits(['user-created', 'user-updated', 'cancel']);
 

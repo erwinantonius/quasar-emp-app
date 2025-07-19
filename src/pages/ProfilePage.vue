@@ -40,6 +40,10 @@
                                 <q-icon name="business" size="16px" class="q-mr-xs" />
                                 <span class="text-body2">{{ profile.workplace_delegate[0]?.name || 'No Workplace' }}</span>
                             </div>
+                            <div class="row items-center q-mt-xs" v-if="tenantInfo?.name">
+                                <q-icon name="apartment" size="16px" class="q-mr-xs" />
+                                <span class="text-body2">{{ tenantInfo.name }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -117,6 +121,14 @@
                                     <div>
                                         <div class="text-caption text-grey-6">Phone</div>
                                         <div class="text-body2 text-weight-medium">{{ profile?.phone || 'Not specified' }}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="profile-info-item" v-if="tenantInfo?.name">
+                                    <q-icon name="apartment" color="accent" class="q-mr-sm" />
+                                    <div>
+                                        <div class="text-caption text-grey-6">Organization</div>
+                                        <div class="text-body2 text-weight-medium">{{ tenantInfo.name }}</div>
                                     </div>
                                 </div>
                                 
@@ -248,6 +260,21 @@
                 </q-card-section>
             </q-card>
         </div>
+
+        <!-- Logout Section -->
+        <div class="q-px-md q-pb-xl">
+            <q-btn
+                color="negative"
+                size="lg"
+                class="full-width logout-btn"
+                no-caps
+                @click="logout"
+                :loading="loggingOut"
+            >
+                <q-icon name="logout" class="q-mr-sm" />
+                Logout
+            </q-btn>
+        </div>
     </q-page>
 </template>
 
@@ -257,12 +284,26 @@ import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useUserStore } from 'stores/user';
 import { useAuthStore } from 'stores/auth';
+import { TenantApi } from 'src/api';
 import { titleCase } from 'src/helpers';
 
 const router = useRouter();
 const $q = useQuasar();
 const userStore = useUserStore();
 const authStore = useAuthStore();
+const tenantInfo = ref({});
+
+// Fetch tenant information
+const fetchTenantInfo = async () => {
+  try {
+    const { data } = await TenantApi.getTenantById(profile.value?.tenant || userStore.profile?.tenant );
+    if (data) {
+      tenantInfo.value = data;
+    }
+  } catch (error) {
+    console.error('Error fetching tenant info:', error);
+  }
+};
 
 // Computed properties
 const profile = computed(() => userStore.profile);
@@ -274,6 +315,8 @@ const userStats = ref({
     todayAttendance: 0,
     teamMembers: 0
 });
+
+const loggingOut = ref(false);
 
 // Methods
 const formatDate = (dateString) => {
@@ -308,6 +351,46 @@ const changePassword = () => {
 
 const goBack = () => {
     router.back();
+};
+
+const logout = async () => {
+    $q.dialog({
+        title: 'Confirm Logout',
+        message: 'Are you sure you want to logout?',
+        cancel: true,
+        persistent: true,
+        ok: {
+            label: 'Yes, Logout',
+            color: 'negative',
+            'no-caps': true
+        }
+    }).onOk(async () => {
+        loggingOut.value = true;
+        
+        try {
+            // Clear auth store
+            await authStore.logout();
+            
+            $q.notify({
+                type: 'positive',
+                message: 'Successfully logged out',
+                timeout: 2000
+            });
+            
+            // Redirect to login page
+            router.push('/login');
+            
+        } catch (error) {
+            console.error('Logout error:', error);
+            $q.notify({
+                type: 'negative',
+                message: 'Failed to logout. Please try again.',
+                timeout: 3000
+            });
+        } finally {
+            loggingOut.value = false;
+        }
+    });
 };
 
 const fetchUserStats = async () => {
@@ -354,6 +437,7 @@ const avatarUrl = computed(() => {
 // Lifecycle
 onMounted(() => {
     initializeProfile();
+    fetchTenantInfo();
 });
 </script>
 
@@ -506,6 +590,23 @@ onMounted(() => {
     &:hover {
       background: rgba(255, 255, 255, 0.08) !important;
     }
+  }
+}
+
+// Logout button styling
+.logout-btn {
+  height: 60px;
+  border-radius: 12px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+  }
+  
+  &.q-btn--loading {
+    opacity: 0.8;
   }
 }
 

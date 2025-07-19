@@ -1,7 +1,7 @@
 <template>
     <q-layout view="lHh LpR lFf" :class="[{ 'bg-body': !$q.dark.isActive }]">
         <q-header
-            v-if="$q.screen.gt.xs || ($q.screen.lt.sm && $route.name === 'home')"
+            v-if="$q.screen.gt.xs"
             :bordered="$q.screen.gt.xs"
             :class="[
                 { 'bg-white text-dark': $q.screen.gt.xs && !$q.dark.isActive },
@@ -35,7 +35,7 @@
                     />
 
                     <q-btn round dense>
-                        <q-avatar v-if="user" size="30px" @click="goToProfile()">
+                        <q-avatar v-if="profile" size="30px" @click="goToProfile()">
                             <img :src="avatarUrl" :title="profile.fullname" />
                         </q-avatar>
                         <q-popup-proxy

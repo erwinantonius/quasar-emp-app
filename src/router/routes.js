@@ -33,6 +33,12 @@ const routes = [
         component: () => import('pages/Attendance/AttendanceTick.vue'),
         meta: { requireAuth: true },
       },
+      {
+        name: 'attendance-history',
+        path: 'history',
+        component: () => import('pages/Attendance/AttendanceHistory.vue'),
+        meta: { requireAuth: true },
+      },
     ],
   },
   {

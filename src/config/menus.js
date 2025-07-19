@@ -48,6 +48,14 @@ const menu_mobile = [
     description: 'Manage your attendance records and view history.',
   },
   {
+    title: 'Attendance History',
+    icon: 'history',
+    path: '/attendance/history',
+    roles: ['superadmin', 'multitask_worker', 'putaway_team', 'supervisor'],
+    group: 'Time Management',
+    description: 'View your last 10 attendance records with validation status.',
+  },
+  {
     title: 'Timesheet',
     icon: 'sym_o_recycling',
     path: '/timesheet/timesheet-list',
@@ -75,7 +83,7 @@ const menu_mobile = [
   {
     title: 'Profile',
     icon: 'shopping_basket',
-    path: '/profile/profile-page',
+    path: '/profile',
     roles: ['superadmin', 'multitask_worker', 'picker', 'supervisor'],
     group: 'Personal',
     description: 'View and edit your profile information.',

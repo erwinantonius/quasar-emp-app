@@ -10,18 +10,18 @@ const silence = (form_obj = {}, set_on = true, except = []) => {
         form_obj =
             except.length == 0
                 ? form_obj.map((m) => {
-                      delete m.disabled;
-                      return m;
-                  })
+                    delete m.disabled;
+                    return m;
+                })
                 : form_obj
-                      .map((m) => {
-                          delete m.disabled;
-                          return m;
-                      })
-                      .map((m) => {
-                          if (except.includes(m.name)) m.disabled = true;
-                          return m;
-                      });
+                    .map((m) => {
+                        delete m.disabled;
+                        return m;
+                    })
+                    .map((m) => {
+                        if (except.includes(m.name)) m.disabled = true;
+                        return m;
+                    });
     return form_obj;
 };
 
@@ -30,7 +30,7 @@ const groupArray = (value = [], field = '') => {
         const keys = field.split('.');
         let value = item;
         for (const k of keys) {
-            if (value && value.hasOwnProperty(k)) {
+            if (value && Object.prototype.hasOwnProperty.call(value, k)) {
                 value = value[k];
             } else {
                 value = undefined;
@@ -60,9 +60,9 @@ const groupArray = (value = [], field = '') => {
 const titleCase = (text) => {
     return text
         ? text
-              .replace(/_/g, ' ')
-              .replace(/(?: |\b)(\w)/g, (s) => s.toUpperCase())
-              .replace(/\s+/g, ' ')
+            .replace(/_/g, ' ')
+            .replace(/(?: |\b)(\w)/g, (s) => s.toUpperCase())
+            .replace(/\s+/g, ' ')
         : '';
 };
 

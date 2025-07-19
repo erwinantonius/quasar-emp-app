@@ -6,12 +6,24 @@
                 <div class="profile-header bg-gradient-to-r from-primary to-secondary q-pa-md text-white">
                     <div class="row items-center justify-between">
                         <div class="row items-center">
-                            <q-avatar size="48px" color="white" text-color="primary" class="q-mr-md">
+                            <q-avatar 
+                                size="48px" 
+                                color="white" 
+                                text-color="primary" 
+                                class="q-mr-md cursor-pointer avatar-clickable"
+                                @click="goToProfile"
+                                v-ripple
+                            >
                                 <q-img :src="avatarUrl" :alt="profile?.fullname || 'User Avatar'" />
+                                <q-tooltip>View Profile</q-tooltip>
                             </q-avatar>
                             <div>
                                 <div class="text-h6 text-weight-bold">Howdy, {{ profile?.first_name || 'User' }}!</div>
                                 <div class="text-body2 opacity-80">Position: {{ profile?.position || 'Position' }}</div>
+                                <div class="text-caption opacity-70" v-if="tenantInfo">
+                                    <q-icon name="business" size="xs" class="q-mr-xs" />
+                                    {{ tenantInfo.name }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -33,14 +45,16 @@
                     <div class="row q-col-gutter-md">
                         <!-- Check-in Status -->
                         <div class="col-6">
-                            <div class="summary-item q-pa-md rounded-lg" :class="todaySummary.checkedIn ? 'bg-green-50 border-left-positive' : 'bg-red-50 border-left-negative'">
+                            <div class="summary-item q-pa-md rounded-lg" :class="todaySummary.checkedIn ? 'bg-green-50 border-left-positive' : 'bg-grey-50 border-left-grey'">
                                 <div class="row items-center">
-                                    <q-icon :name="todaySummary.checkedIn ? 'login' : 'logout'" 
-                                            :color="todaySummary.checkedIn ? 'positive' : 'negative'" 
+                                    <q-icon :name="todaySummary.checkedIn ? 'login' : 'schedule'" 
+                                            :color="todaySummary.checkedIn ? 'positive' : 'grey'" 
                                             size="sm" class="q-mr-sm" />
                                     <div>
                                         <div class="text-body2 text-weight-medium">Check-in</div>
-                                        <div class="text-caption text-grey-6">{{ todaySummary.checkInTime || 'Not yet' }}</div>
+                                        <div class="text-caption" :class="todaySummary.checkedIn ? 'text-positive' : 'text-grey-6'">
+                                            {{ todaySummary.checkInTime || 'Not checked in' }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -137,14 +151,14 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useUserStore } from 'stores/user';
 import { useAuthStore } from 'stores/auth';
 import { menu_mobile } from 'src/config/menus.js';
 import { groupArray, titleCase } from 'src/helpers';
-import { TenantApi } from 'src/api';
+import { TenantApi, AttendanceApi } from 'src/api';
 
 const router = useRouter();
 const $q = useQuasar();
@@ -167,6 +181,8 @@ const todaySummary = ref({
     checkInTime: null,
     workingHours: '0h 0m'
 });
+
+const attendanceRefreshInterval = ref(null);
 
 const recentActivities = ref([
     {
@@ -250,23 +266,86 @@ const navigateToAction = (item) => {
     }
 };
 
+const goToProfile = () => {
+    router.push('/profile');
+};
+
 const fetchTenantInfo = async () => {
-    if (profile.value?.tenant) {
-        try {
-            const response = await TenantApi.getTenantById(profile.value.tenant);
-            if (response && response.data) {
-                tenantInfo.value = response.data;
-            }
-        } catch (error) {
-            console.error('Error fetching tenant info:', error);
-            // Fallback: use workplace delegate info if available
-            if (profile.value?.workplace_delegate?.length) {
-                tenantInfo.value = {
-                    name: profile.value.workplace_delegate[0].name,
-                    code: profile.value.workplace_delegate[0].code
-                };
+    console.log('Fetching tenant info...');
+    console.log(profile.value);
+    try {
+        if (profile.value?.tenant) {
+            const { data } = await TenantApi.getTenantById(profile.value.tenant);
+            if (data) {
+                tenantInfo.value = data;
+                return;
             }
         }
+    } catch (error) {
+        console.error('Error fetching tenant info:', error);
+    }
+};
+
+const fetchTodayAttendance = async () => {
+    try {
+        // Get the first workplace delegate or fallback
+        const workplace = user.value?.workplace_delegate?.[0] || user.value?.workplace;
+        
+        if (!user.value?._id || !workplace?._id) {
+            console.log('User or workplace data not available for attendance fetch');
+            return;
+        }
+
+        const response = await AttendanceApi.getTodayAttendance(user.value._id, workplace._id);
+        const todayAttendance = response.data;
+        
+        if (todayAttendance) {
+            let workingHours = '0h 0m';
+            
+            // Calculate working hours if both check-in and check-out exist
+            if (todayAttendance.checkin_date && todayAttendance.checkout_date) {
+                const checkinTime = new Date(todayAttendance.checkin_date);
+                const checkoutTime = new Date(todayAttendance.checkout_date);
+                const diffMs = checkoutTime - checkinTime;
+                const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                workingHours = `${hours}h ${minutes}m`;
+            } else if (todayAttendance.checkin_date) {
+                // Calculate current working hours if only checked in
+                const checkinTime = new Date(todayAttendance.checkin_date);
+                const now = new Date();
+                const diffMs = now - checkinTime;
+                const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                workingHours = `${hours}h ${minutes}m`;
+            }
+            
+            todaySummary.value = {
+                checkedIn: !!todayAttendance.checkin_date,
+                checkInTime: todayAttendance.checkin_date ? 
+                    new Date(todayAttendance.checkin_date).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false 
+                    }) : null,
+                workingHours: workingHours
+            };
+        } else {
+            // No attendance record for today
+            todaySummary.value = {
+                checkedIn: false,
+                checkInTime: null,
+                workingHours: '0h 0m'
+            };
+        }
+    } catch (error) {
+        console.log('Failed to fetch today attendance:', error);
+        // If API fails, keep default values
+        todaySummary.value = {
+            checkedIn: false,
+            checkInTime: null,
+            workingHours: '0h 0m'
+        };
     }
 };
 
@@ -282,23 +361,11 @@ const fetchUserStats = async () => {
             teamMembers: roleCount
         };
 
-        // Simulate today's summary with better data
-        const now = new Date();
-        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-        const checkInTime = new Date(now.getTime() - (Math.random() * 4 * 60 * 60 * 1000)); // Random time within last 4 hours
-        
-        todaySummary.value = {
-            checkedIn: !isWeekend && Math.random() > 0.2, // 80% chance of being checked in on weekdays
-            checkInTime: checkInTime.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: true 
-            }),
-            workingHours: `${Math.floor(Math.random() * 8) + 1}h ${Math.floor(Math.random() * 60)}m`
-        };
+        // Fetch real attendance data
+        await fetchTodayAttendance();
 
-        // Update recent activities with profile data
-        recentActivities.value = [
+        // Update recent activities with profile and attendance data
+        const recentActivitiesData = [
             {
                 icon: 'person',
                 color: 'positive',
@@ -310,14 +377,40 @@ const fetchUserStats = async () => {
                 color: 'info',
                 title: `${titleCase(profile.value?.roles?.[0] || 'user')} privileges active`,
                 time: 'Today'
-            },
-            {
-                icon: 'business',
-                color: 'warning',
-                title: profile.value?.workplace_delegate?.[0]?.name || 'Workplace assigned',
-                time: 'Active'
             }
         ];
+
+        // Add attendance activity if user has checked in today
+        if (todaySummary.value.checkedIn) {
+            recentActivitiesData.unshift({
+                icon: 'login',
+                color: 'positive',
+                title: `Checked in at ${todaySummary.value.checkInTime}`,
+                time: 'Today'
+            });
+        }
+
+        // Add workplace info
+        if (profile.value?.workplace_delegate?.[0]?.name) {
+            recentActivitiesData.push({
+                icon: 'business',
+                color: 'warning',
+                title: profile.value.workplace_delegate[0].name,
+                time: 'Active workplace'
+            });
+        }
+
+        // Add tenant info
+        if (tenantInfo.value?.name) {
+            recentActivitiesData.push({
+                icon: 'apartment',
+                color: 'info',
+                title: `Organization: ${tenantInfo.value.name}`,
+                time: 'Current'
+            });
+        }
+
+        recentActivities.value = recentActivitiesData;
     } catch (error) {
         console.error('Error fetching user stats:', error);
     }
@@ -326,6 +419,7 @@ const fetchUserStats = async () => {
 const initializeDashboard = async () => {
     $q.loading.show();
     try {
+        await userStore.whoAmI();
         await Promise.all([
             fetchTenantInfo(),
             fetchUserStats()
@@ -354,8 +448,19 @@ const avatarUrl = computed(() => {
 // Lifecycle
 onMounted(() => {
     initializeDashboard();
-    console.log(JSON.stringify(profile.value));
+    
+    // Set up auto-refresh for attendance data every 5 minutes
+    attendanceRefreshInterval.value = setInterval(() => {
+        fetchTodayAttendance();
+    }, 5 * 60 * 1000); // 5 minutes
 });
+
+onUnmounted(() => {
+    if (attendanceRefreshInterval.value) {
+        clearInterval(attendanceRefreshInterval.value);
+    }
+});
+
 </script>
 
 <style lang="scss" scoped>
@@ -384,6 +489,20 @@ onMounted(() => {
   position: relative;
 }
 
+// Avatar clickable styling
+.avatar-clickable {
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
 // Stat cards
 .stat-card {
   transition: all 0.3s ease;
@@ -410,6 +529,10 @@ onMounted(() => {
   
   &.border-left-info {
     border-left-color: var(--q-info);
+  }
+  
+  &.border-left-grey {
+    border-left-color: var(--q-grey-5);
   }
 }
 

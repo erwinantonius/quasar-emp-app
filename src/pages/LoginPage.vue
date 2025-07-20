@@ -194,8 +194,8 @@ import { useQuasar } from 'quasar';
 import { AuthApi } from 'src/api';
 import { getErrorMessage } from '../utils/error.handle';
 
-const email = ref('admin@company.com');
-const password = ref('admin123');
+const email = ref('tony.stark@astra.co.id');
+const password = ref('astra123');
 const isProcessing = ref(false);
 const passwordType = ref('password');
 

@@ -126,7 +126,6 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import BreadCrumb from 'src/components/BreadCrumb.vue';
 import CreateWorkplace from './CreateWorkplace.vue';
 import FilterBox from 'src/components/FilterBox.vue';
 import { date } from 'quasar';
@@ -135,6 +134,7 @@ import { useQuasar } from 'quasar';
 import { TenantApi, WorkplaceApi } from 'src/api';
 import HeaderCardSection from 'src/components/HeaderCardSection.vue';
 import { WORKPLACE_TYPE } from 'src/config/constant';
+import BreadCrumb from 'src/components/BreadCrumb.vue';
 
 const $q = useQuasar();
 const router = useRouter();
@@ -390,12 +390,12 @@ const onCancel = (row) => {
 // Navigation function
 const navigateToWorkplaceUsers = (workplace) => {
     console.log('Navigating to workplace users:', workplace);
-    router.push({ 
-        name: 'tenant-users', 
-        params: { 
+    router.push({
+        name: 'tenant-users',
+        params: {
             tenant_id: workplace.tenant._id,
             workplace_id: workplace._id
-        } 
+        }
     });
 };
 

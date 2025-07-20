@@ -31,7 +31,7 @@
       :rows="workplaces"
       :columns="columns"
       :loading="loading"
-      :pagination="pagination"
+      v-model:pagination="pagination"
       @request="onRequest"
       row-key="_id"
       binary-state-sort
@@ -294,9 +294,9 @@ const fetchWorkplaces = async (props = {}) => {
   loading.value = true;
   try {
     const { page = 1, rowsPerPage = 10, sortBy, descending } = props.pagination || pagination.value;
-    
+
     // Build base filter with tenant_id and deleted (always present)
-    const baseFilter = { 
+    const baseFilter = {
       tenant: tenantId.value, // Always filter by tenant_id
       deleted: { $ne: true } // Always exclude deleted records
     };
@@ -304,7 +304,7 @@ const fetchWorkplaces = async (props = {}) => {
     // Append additional filters from filterbox
     const filter = {
       ...baseFilter,
-      ...currentFilter.value 
+      ...currentFilter.value
     };
 
     // Build sort
@@ -323,12 +323,12 @@ const fetchWorkplaces = async (props = {}) => {
 
     if (response && response.data) {
       workplaces.value = response.data;
-      
+
       // Get total count
       const countResponse = await WorkplaceApi.countWorkplace({
         params: { filter }
       });
-      
+
       pagination.value.rowsNumber = countResponse?.data?.count || 0;
       pagination.value.page = page;
       pagination.value.rowsPerPage = rowsPerPage;
@@ -354,7 +354,7 @@ const onRequest = (props) => {
 // Handle search
 const handleSearch = (filterData) => {
   const filter = {};
-  
+
   // filterData is an object, not an array
   Object.keys(filterData).forEach(fieldName => {
     const fieldValue = filterData[fieldName];
@@ -368,7 +368,7 @@ const handleSearch = (filterData) => {
       }
     }
   });
-  
+
   currentFilter.value = filter;
   pagination.value.page = 1;
   fetchWorkplaces();
@@ -434,20 +434,20 @@ const deleteWorkplace = async () => {
 
 // Navigation function
 const navigateToWorkplaceUsers = (workplace) => {
-  router.push({ 
-    name: 'tenant-users-workplace', 
-    params: { 
+  router.push({
+    name: 'tenant-users-workplace',
+    params: {
       tenant_id: tenantId.value,
       workplace_id: workplace._id
-    } 
+    }
   });
 };
 
 // Navigate to create workplace page
 const navigateToCreatePage = () => {
-  router.push({ 
+  router.push({
     name: 'create-workplace-page',
-    query: { 
+    query: {
       tenant_id: tenantId.value
     }
   });

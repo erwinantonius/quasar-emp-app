@@ -17,7 +17,7 @@
                     Attendance Check
                 </div>
             </div>
-            
+
             <!-- Simple Elegant Time Display Card -->
             <q-card class="time-display-card rounded-xl shadow-3 overflow-hidden" flat>
                 <div class="time-display-content q-pa-lg text-center">
@@ -25,7 +25,7 @@
                     <div class="time-display q-mb-xs">
                         <span class="time-text">{{ currentTime }}</span>
                     </div>
-                    
+
                     <!-- Date with subtle styling -->
                     <div class="date-display">
                         <span class="date-text">{{ currentDate }}</span>
@@ -43,7 +43,7 @@
                         Location Information
                     </div>
                 </q-card-section>
-                
+
                 <q-card-section class="q-pt-none">
                     <!-- Location Info -->
                     <div class="location-info q-mb-md">
@@ -51,21 +51,21 @@
                             <q-spinner-dots size="lg" color="primary" />
                             <div class="text-body2 text-grey-6 q-mt-sm">Getting your location...</div>
                         </div>
-                        
+
                         <div v-else-if="locationError" class="text-center q-py-md">
                             <q-icon name="location_off" size="lg" color="negative" />
                             <div class="text-body2 text-negative q-mt-sm">{{ locationError }}</div>
-                            <q-btn 
-                                flat 
-                                color="primary" 
-                                label="Retry" 
+                            <q-btn
+                                flat
+                                color="primary"
+                                label="Retry"
                                 @click="getCurrentLocation"
                                 class="q-mt-md"
                             />
                         </div>
-                        
+
                         <div v-else class="location-details">
-                            
+
                             <!-- Workplace Proximity Status -->
                             <div class="location-item" v-if="workplaceProximityStatus.length > 0">
                                 <q-icon name="business" color="accent" class="q-mr-sm" />
@@ -76,9 +76,9 @@
                                             <div class="text-body2 text-weight-medium">
                                                 {{ status.name || `Workplace ${index + 1}` }}
                                             </div>
-                                            <q-chip 
-                                                :color="status.isWithinRadius ? 'positive' : 'warning'" 
-                                                text-color="white" 
+                                            <q-chip
+                                                :color="status.isWithinRadius ? 'positive' : 'warning'"
+                                                text-color="white"
                                                 size="sm"
                                                 dense
                                             >
@@ -91,7 +91,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                         </div>
                     </div>
 
@@ -115,7 +115,7 @@
                                 Center map on my location
                             </q-tooltip>
                         </q-btn>
-                        
+
                         <div id="attendance-map" class="map-element"></div>
                     </div>
                 </q-card-section>
@@ -130,17 +130,17 @@
                         <q-icon name="fact_check" class="q-mr-sm" />
                         Today's Attendance
                     </div>
-                    
+
                     <div class="row q-col-gutter-md">
                         <!-- Check In Status -->
                         <div class="col-6">
                             <div class="status-card q-pa-md rounded-lg" :class="attendanceStatus.checkedIn ? 'bg-green-50 border-left-positive' : 'bg-grey-50'">
                                 <div class="row items-center">
-                                    <q-icon 
-                                        :name="attendanceStatus.checkedIn ? 'login' : 'schedule'" 
-                                        :color="attendanceStatus.checkedIn ? 'positive' : 'grey'" 
-                                        size="sm" 
-                                        class="q-mr-sm" 
+                                    <q-icon
+                                        :name="attendanceStatus.checkedIn ? 'login' : 'schedule'"
+                                        :color="attendanceStatus.checkedIn ? 'positive' : 'grey'"
+                                        size="sm"
+                                        class="q-mr-sm"
                                     />
                                     <div>
                                         <div class="text-body2 text-weight-medium">Check In</div>
@@ -151,16 +151,16 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Check Out Status -->
                         <div class="col-6">
                             <div class="status-card q-pa-md rounded-lg" :class="attendanceStatus.checkedOut ? 'bg-red-50 border-left-negative' : 'bg-grey-50'">
                                 <div class="row items-center">
-                                    <q-icon 
-                                        :name="attendanceStatus.checkedOut ? 'logout' : 'schedule'" 
-                                        :color="attendanceStatus.checkedOut ? 'negative' : 'grey'" 
-                                        size="sm" 
-                                        class="q-mr-sm" 
+                                    <q-icon
+                                        :name="attendanceStatus.checkedOut ? 'logout' : 'schedule'"
+                                        :color="attendanceStatus.checkedOut ? 'negative' : 'grey'"
+                                        size="sm"
+                                        class="q-mr-sm"
                                     />
                                     <div>
                                         <div class="text-body2 text-weight-medium">Check Out</div>
@@ -255,8 +255,8 @@ const loadWorkplace = async (ids) => {
             console.log('No workplace IDs provided');
             return [];
         }
-        
-        
+
+
         const { data } = await WorkplaceApi.getWorkplace({
             params: {
                 filter: { _id: { $in: ids } },
@@ -264,7 +264,7 @@ const loadWorkplace = async (ids) => {
                 select: 'name coordinate radius'
             }
         });
-        
+
         return data || [];
     } catch (error) {
         console.error('Error loading workplace data:', error);
@@ -275,7 +275,7 @@ const loadWorkplace = async (ids) => {
 const loadTodayAttendance = async () => {
     // Get the first workplace delegate or fallback
     const workplace = user?.workplace_delegate?.[0] || user?.workplace;
-    
+
     if (!user?._id || !workplace?._id) {
         console.log('User or workplace data not available');
         $q.notify({
@@ -286,16 +286,16 @@ const loadTodayAttendance = async () => {
     }
 
     loadingAttendance.value = true;
-    
+
     try {
         const response = await AttendanceApi.getTodayAttendance(user._id);
         const todayAttendance = response.data;
-        
+
         if (todayAttendance) {
             // Update attendance status based on API data
             attendanceStatus.value.checkedIn = !!todayAttendance.checkin_date;
             attendanceStatus.value.checkedOut = !!todayAttendance.checkout_date;
-            
+
             if (todayAttendance.checkin_date) {
                 const checkinTime = new Date(todayAttendance.checkin_date);
                 attendanceStatus.value.checkInTime = checkinTime.toLocaleTimeString('en-US', {
@@ -304,7 +304,7 @@ const loadTodayAttendance = async () => {
                     hour12: false
                 });
             }
-            
+
             if (todayAttendance.checkout_date) {
                 const checkoutTime = new Date(todayAttendance.checkout_date);
                 attendanceStatus.value.checkOutTime = checkoutTime.toLocaleTimeString('en-US', {
@@ -331,14 +331,14 @@ const loadTodayAttendance = async () => {
 // Methods
 const updateTime = () => {
     const now = new Date();
-    
+
     currentTime.value = now.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
         hour12: false
     });
-    
+
     currentDate.value = now.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -361,7 +361,7 @@ const getCurrentLocation = () => {
         async (position) => {
             userLocation.value.lat = position.coords.latitude;
             userLocation.value.lng = position.coords.longitude;
-            
+
             lastLocationUpdate.value = new Date().toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -372,13 +372,13 @@ const getCurrentLocation = () => {
 
             // Get address from coordinates (reverse geocoding)
             await getAddressFromCoordinates();
-            
+
             // Calculate workplace proximity
             calculateWorkplaceProximity();
-            
+
             // Initialize or update map
             await initializeMap();
-            
+
             locationLoading.value = false;
         },
         (error) => {
@@ -412,7 +412,7 @@ const getAddressFromCoordinates = async () => {
         const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation.value.lat}&lon=${userLocation.value.lng}&addressdetails=1&zoom=18`
         );
-        
+
         if (response.ok) {
             const data = await response.json();
             if (data && data.display_name) {
@@ -467,49 +467,49 @@ const createMap = () => {
             iconAnchor: [10, 10]
         })
     }).addTo(map);
-    
+
 
     const allMarkers = [userMarker];
 
     // Add workplace delegate markers and radius circles
     if (user?.workplace_delegate && user.workplace_delegate.length > 0) {
         let userIsWithinAnyRadius = false; // Track if user is within any workplace radius
-        
+
         user.workplace_delegate.forEach((workplace, index) => {
             if (workplace.coordinate && workplace.coordinate.length == 2) {
-                const [lng, lat] = workplace.coordinate;
+                const [lat, lng] = workplace.coordinate;
                 const radius = workplace.radius || 100; // Default 100 meters if no radius specified
                 const workplaceName = workplace.name || `Workplace ${index + 1}`;
-                
+
                 console.log(`Adding workplace ${index + 1}:`, { name: workplaceName, lat, lng, radius });
-                
+
                 // Calculate distance from user to workplace
                 const userLatLng = window.L.latLng(userLocation.value.lat, userLocation.value.lng);
                 const workplaceLatLng = window.L.latLng(lat, lng);
                 const distance = userLatLng.distanceTo(workplaceLatLng);
                 const isWithinRadius = distance <= radius;
-                
+
                 // Update global radius check
                 if (isWithinRadius) {
                     userIsWithinAnyRadius = true;
                 }
-                
+
                 // Create workplace marker with enhanced styling
                 const workplaceMarker = window.L.marker([lat, lng], {
                     icon: window.L.divIcon({
                         className: 'workplace-marker',
                         html: `<div style="
                             background: radial-gradient(circle,rgba(255, 89, 0, 1) 34%, rgba(237, 221, 83, 1) 100%);
-                            width: 20px; 
-                            height: 20px; 
-                            border-radius: 50%; 
-                            border: 2px solid #000; 
-                            box-shadow: 0 3px 10px rgba(0,0,0,0.5); 
-                            display: flex; 
-                            align-items: center; 
-                            justify-content: center; 
-                            color: white; 
-                            font-size: 10px; 
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 50%;
+                            border: 2px solid #000;
+                            box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-size: 10px;
                             font-weight: bold;
                             position: relative;
                         ">${index + 1}</div>`,
@@ -517,9 +517,9 @@ const createMap = () => {
                         iconAnchor: [15, 15]
                     })
                 }).addTo(map);
-                
+
                 allMarkers.push(workplaceMarker);
-                
+
                 // Create radius circle with dynamic styling
                 const circle = window.L.circle([lat, lng], {
                     color: '#000',
@@ -528,7 +528,7 @@ const createMap = () => {
                     radius: radius,
                     weight: 1,
                 }).addTo(map);
-                
+
                 // Enhanced popup with more information
                 const popupContent = `
                     <div style="text-align: center; min-width: 200px;">
@@ -543,9 +543,9 @@ const createMap = () => {
                         <small><strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
                     </div>
                 `;
-                
+
                 workplaceMarker.bindPopup(popupContent);
-                
+
                 // Add click event to highlight the workplace
                 workplaceMarker.on('click', () => {
                     // Temporarily highlight the circle
@@ -555,14 +555,14 @@ const createMap = () => {
                         fillOpacity: circle.options.fillOpacity,
                         weight: circle.options.weight
                     };
-                    
+
                     circle.setStyle({
                         color: '#ff9800',
                         fillColor: '#ff9800',
                         fillOpacity: 0.3,
                         weight: 4
                     });
-                    
+
                     setTimeout(() => {
                         circle.setStyle(originalStyle);
                     }, 2000);
@@ -576,7 +576,7 @@ const createMap = () => {
         if (allMarkers.length > 1) {
             const group = new window.L.featureGroup(allMarkers);
             map.fitBounds(group.getBounds().pad(0.15)); // 15% padding
-            
+
             // Set zoom based on user's proximity to workplace
             if (userIsWithinAnyRadius) {
                 // User is within radius - set zoom to 15 for better detail
@@ -648,7 +648,7 @@ const recenterMap = () => {
 
 // Check if user is within workplace radius and get details
 const checkUserProximity = () => {
-    if (!user?.workplace_delegate || user.workplace_delegate.length === 0 || 
+    if (!user?.workplace_delegate || user.workplace_delegate.length === 0 ||
         !userLocation.value.lat || !userLocation.value.lng) {
         return {
             isWithinRadius: false,
@@ -667,14 +667,14 @@ const checkUserProximity = () => {
         if (workplace.coordinate && workplace.coordinate.length >= 2) {
             const [lng, lat] = workplace.coordinate;
             const radius = workplace.radius || 100;
-            
+
             const distance = calculateDistance(userLatLng.lat, userLatLng.lng, lat, lng);
-            
+
             if (distance < minDistance) {
                 minDistance = distance;
                 nearestWorkplace = workplace;
             }
-            
+
             if (distance <= radius) {
                 isWithinRadius = true;
             }
@@ -694,8 +694,8 @@ const showOutsideRadiusConfirmation = (action, distance, workplaceName) => {
     return new Promise((resolve) => {
         $q.dialog({
             title: 'Location Outside Workplace Radius',
-            message: `You are currently ${Math.round(distance)}m away from ${workplaceName || 'the workplace'}. 
-                     
+            message: `You are currently ${Math.round(distance)}m away from ${workplaceName || 'the workplace'}.
+
 Your ${action} will be recorded but will require supervisor approval to be considered valid.
 
 Do you want to proceed?`,
@@ -719,7 +719,7 @@ const handleAttendanceAction = async () => {
         // Already checked out, no action needed - button should be disabled
         return;
     }
-    
+
     if (attendanceStatus.value.checkedIn) {
         // User is checked in, so perform check out
         await handleCheckOut();
@@ -749,7 +749,7 @@ const handleCheckIn = async () => {
 
     // Check user proximity to workplace
     const proximityResult = checkUserProximity();
-    
+
     if (proximityResult.error) {
         $q.notify({
             type: 'negative',
@@ -773,7 +773,7 @@ const handleCheckIn = async () => {
             proximityResult.minDistance,
             proximityResult.nearestWorkplace.name
         );
-        
+
         if (!confirmed) {
             return; // User cancelled
         }
@@ -793,10 +793,10 @@ const handleCheckIn = async () => {
         // Use real API call with nearest workplace
         await AttendanceApi.quickCheckIn(user._id, proximityResult.nearestWorkplace._id, {
             coords: {
-                longitude: userLocation.value.lng,
-                latitude: userLocation.value.lat
+                latitude: userLocation.value.lat,
+                longitude: userLocation.value.lng
             }
-        });
+        }, proximityResult.isWithinRadius);
 
         // Update local state
         attendanceStatus.value.checkedIn = true;
@@ -841,26 +841,26 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
 
 // Calculate workplace proximity status
 const calculateWorkplaceProximity = () => {
-    if (!user?.workplace_delegate || user.workplace_delegate.length === 0 || 
+    if (!user?.workplace_delegate || user.workplace_delegate.length === 0 ||
         !userLocation.value.lat || !userLocation.value.lng) {
         workplaceProximityStatus.value = [];
         return;
     }
 
     const proximityData = [];
-    
+
     user.workplace_delegate.forEach((workplace) => {
         if (workplace.coordinate && workplace.coordinate.length == 2) {
             const [lng, lat] = workplace.coordinate;
             const radius = workplace.radius || 100;
-            
+
             const distance = calculateDistance(
-                userLocation.value.lat, 
-                userLocation.value.lng, 
-                lat, 
+                userLocation.value.lat,
+                userLocation.value.lng,
+                lat,
                 lng
             );
-            
+
             proximityData.push({
                 name: workplace.name,
                 distance: distance,
@@ -870,10 +870,10 @@ const calculateWorkplaceProximity = () => {
             });
         }
     });
-    
+
     // Sort by distance (nearest first)
     proximityData.sort((a, b) => a.distance - b.distance);
-    
+
     workplaceProximityStatus.value = proximityData;
 };
 
@@ -897,7 +897,7 @@ const handleCheckOut = async () => {
 
     // Check user proximity to workplace
     const proximityResult = checkUserProximity();
-    
+
     if (proximityResult.error) {
         $q.notify({
             type: 'negative',
@@ -921,7 +921,7 @@ const handleCheckOut = async () => {
             proximityResult.minDistance,
             proximityResult.nearestWorkplace.name
         );
-        
+
         if (!confirmed) {
             return; // User cancelled
         }
@@ -941,10 +941,10 @@ const handleCheckOut = async () => {
         // Use real API call with nearest workplace
         await AttendanceApi.quickCheckOut(user._id, {
             coords: {
-                longitude: userLocation.value.lng,
-                latitude: userLocation.value.lat
+                latitude: userLocation.value.lat,
+                longitude: userLocation.value.lng
             }
-        });
+        }, proximityResult.isWithinRadius);
 
         // Update local state
         attendanceStatus.value.checkedOut = true;
@@ -993,10 +993,10 @@ onMounted(async () => {
             message: 'Failed to load workplace information'
         });
     }
-    
+
     // Get user location
     getCurrentLocation();
-    
+
     // Load today's attendance data
     await loadTodayAttendance();
 });
@@ -1005,7 +1005,7 @@ onUnmounted(() => {
     if (timeInterval.value) {
         clearInterval(timeInterval.value);
     }
-    
+
     if (map) {
         map.remove();
     }
@@ -1032,7 +1032,7 @@ onUnmounted(() => {
 .time-display-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
@@ -1071,12 +1071,12 @@ onUnmounted(() => {
   background: rgba(0, 0, 0, 0.02);
   border-radius: 8px;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: rgba(0, 0, 0, 0.04);
     transform: translateX(2px);
   }
-  
+
   .q-icon {
     margin-top: 2px;
     flex-shrink: 0;
@@ -1109,17 +1109,17 @@ onUnmounted(() => {
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   backdrop-filter: blur(10px);
-  
+
   &:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
   }
-  
+
   // Animation for the icon
   .q-icon {
     transition: transform 0.3s ease;
   }
-  
+
   &:active .q-icon {
     transform: scale(0.95);
   }
@@ -1137,10 +1137,10 @@ onUnmounted(() => {
 
 :deep(.workplace-marker) {
   z-index: 999 !important;
-  
+
   div {
     transition: all 0.3s ease;
-    
+
     &:hover {
       transform: scale(1.1);
       box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
@@ -1167,11 +1167,11 @@ onUnmounted(() => {
 .status-card {
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
-  
+
   &.border-left-positive {
     border-left-color: var(--q-positive);
   }
-  
+
   &.border-left-negative {
     border-left-color: var(--q-negative);
   }
@@ -1184,7 +1184,7 @@ onUnmounted(() => {
   font-weight: 500;
   transition: all 0.3s ease;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  
+
   &:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.04);
     border-color: rgba(0, 0, 0, 0.24);
@@ -1197,12 +1197,12 @@ onUnmounted(() => {
   border-radius: 12px;
   font-weight: bold;
   transition: all 0.3s ease;
-  
+
   &:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
-  
+
   // Special styling for completed state
   &.q-btn--disabled {
     opacity: 0.7 !important;
@@ -1214,46 +1214,46 @@ onUnmounted(() => {
   .map-container {
     height: 250px;
   }
-  
+
   .map-recenter-btn {
     bottom: 12px !important;
     right: 12px !important;
-    
+
     .q-btn__wrapper {
       min-width: 40px !important;
       min-height: 40px !important;
     }
   }
-  
+
   .location-item {
     padding: 8px !important;
-    
+
     .q-icon {
       font-size: 1.1rem !important;
     }
-    
+
     .text-body2 {
       font-size: 0.85rem;
     }
-    
+
     .text-caption {
       font-size: 0.75rem;
     }
   }
-  
+
   .action-btn {
     height: 50px;
   }
-  
+
   .history-btn {
     height: 40px;
   }
-  
+
   // Responsive time display
   .time-text {
     font-size: 2.5rem !important;
   }
-  
+
   .date-text {
     font-size: 0.9rem !important;
   }
@@ -1263,7 +1263,7 @@ onUnmounted(() => {
   .time-text {
     font-size: 2.2rem !important;
   }
-  
+
   .date-text {
     font-size: 0.85rem !important;
   }
@@ -1273,29 +1273,29 @@ onUnmounted(() => {
 .q-dark {
   .location-item {
     background: rgba(255, 255, 255, 0.05) !important;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.08) !important;
     }
   }
-  
+
   .status-card {
     background: var(--q-dark-page) !important;
   }
-  
+
   .history-btn {
     border-color: rgba(255, 255, 255, 0.24);
-    
+
     &:hover:not(:disabled) {
       background: rgba(255, 255, 255, 0.08);
       border-color: rgba(255, 255, 255, 0.4);
     }
   }
-  
+
   // Simple dark mode time display
   .time-display-card {
     background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    
+
     &:hover {
       box-shadow: 0 8px 25px rgba(44, 62, 80, 0.4);
     }

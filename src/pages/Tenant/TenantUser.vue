@@ -27,7 +27,7 @@
       :rows="users"
       :columns="columns"
       :loading="loading"
-      :pagination="pagination"
+      v-model:pagination="pagination"
       @request="onRequest"
       row-key="_id"
       binary-state-sort
@@ -128,7 +128,7 @@ const route = useRoute();
 const router = useRouter();
 const $q = useQuasar();
 
-// Get tenant_id and workplace_id from route params  
+// Get tenant_id and workplace_id from route params
 const tenantId = ref(route.params.tenant_id);
 const workplaceId = ref(route.params.workplace_id);
 const tenantName = ref('');
@@ -318,13 +318,13 @@ const fetchWorkplaceName = async () => {
 // Fetch users with tenant filter
 const fetchUsers = async (props = {}) => {
     console.log('Fetching users for tenant:', tenantId.value, 'workplace:', workplaceId.value);
-    
+
   loading.value = true;
   try {
     const { page = 1, rowsPerPage = 10, sortBy, descending } = props.pagination || pagination.value;
-    
+
     // Build base filter with tenant_id and deleted (always present)
-    let baseFilter = { 
+    let baseFilter = {
       tenant: tenantId.value, // Always filter by tenant_id
       deleted: { $ne: true } // Always exclude deleted records
     };
@@ -340,7 +340,7 @@ const fetchUsers = async (props = {}) => {
     // Append additional filters from filterbox
     const filter = {
       ...baseFilter,
-      ...currentFilter.value 
+      ...currentFilter.value
     };
 
     // Build sort
@@ -357,13 +357,13 @@ const fetchUsers = async (props = {}) => {
 
     if (response && response.data) {
       users.value = response.data;
-      
+
       // Get total count with same filter
-      const countResponse = await UserApi.countUser({
+      const { data } = await UserApi.countUser({
         params: { filter }
       });
-      
-      pagination.value.rowsNumber = countResponse?.data?.count || 0;
+
+      pagination.value.rowsNumber = data || 0;
       pagination.value.page = page;
       pagination.value.rowsPerPage = rowsPerPage;
       pagination.value.sortBy = sortBy;
@@ -388,7 +388,7 @@ const onRequest = (props) => {
 // Handle search
 const handleSearch = (filterData) => {
   const filter = {};
-  
+
   // filterData is an object, not an array
   Object.keys(filterData).forEach(fieldName => {
     const fieldValue = filterData[fieldName];
@@ -402,7 +402,7 @@ const handleSearch = (filterData) => {
       }
     }
   });
-  
+
   currentFilter.value = filter;
   pagination.value.page = 1;
   fetchUsers();
@@ -411,12 +411,12 @@ const handleSearch = (filterData) => {
 // Navigate to CreateUserPage (page mode)
 const navigateToCreateUserPage = () => {
   const query = { tenant_id: tenantId.value };
-  
+
   // Add workplace_id to query if we're in a workplace context
   if (workplaceId.value) {
     query.workplace_id = workplaceId.value;
   }
-  
+
   router.push({
     name: 'create-user-page',
     query

@@ -19,10 +19,10 @@
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import BreadCrumb from 'src/components/BreadCrumb.vue';
 import GenericForm from 'components/GenericForm.vue';
 import { TenantApi, WorkplaceApi } from 'src/api';
 import { WORKPLACE_TYPE } from 'src/config/constant';
+import BreadCrumb from 'src/components/BreadCrumb.vue';
 
 const props = defineProps({
   editMode: {
@@ -232,7 +232,7 @@ watch([isEditMode, () => props.initialData], () => {
 // Watch for external coordinates and radius changes to update form fields
 watch([() => props.externalCoordinates, () => props.externalRadius], ([newCoordinates, newRadius]) => {
   let fieldsUpdated = false;
-  
+
   // Update coordinate field if external coordinates provided
   if (newCoordinates && Array.isArray(newCoordinates) && newCoordinates.length >= 2) {
     const coordinateField = formFields.value.find(f => f.name === 'coordinate');
@@ -241,7 +241,7 @@ watch([() => props.externalCoordinates, () => props.externalRadius], ([newCoordi
       fieldsUpdated = true;
     }
   }
-  
+
   // Update radius field if external radius provided
   if (newRadius !== null && newRadius !== undefined && newRadius > 0) {
     const radiusField = formFields.value.find(f => f.name === 'attendance_radius');
@@ -250,7 +250,7 @@ watch([() => props.externalCoordinates, () => props.externalRadius], ([newCoordi
       fieldsUpdated = true;
     }
   }
-  
+
   // Force reactivity only if fields were updated
   if (fieldsUpdated) {
     formFields.value = [...formFields.value];
@@ -285,7 +285,7 @@ const onSubmit = async (formData) => {
     if (props.externalCoordinates && Array.isArray(props.externalCoordinates)) {
       workplaceData.coordinate = props.externalCoordinates;
     }
-    
+
     // Use external radius if provided (for page mode with map)
     if (props.externalRadius !== null && props.externalRadius !== undefined) {
       workplaceData.attendance_radius = props.externalRadius;

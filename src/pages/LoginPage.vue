@@ -222,8 +222,7 @@ const login = async () => {
         isProcessing.value = false;
     } catch (error) {
         isProcessing.value = false;
-        const errorMessage = getErrorMessage(error);
-        $q.notify({ type: 'negative', message: errorMessage });
+        $q.notify({ type: 'negative', message: getErrorMessage(error) || 'Login failed' });
     }
 
     return;

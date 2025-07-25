@@ -500,8 +500,8 @@ const createMap = () => {
                         className: 'workplace-marker',
                         html: `<div style="
                             background: radial-gradient(circle,rgba(255, 89, 0, 1) 34%, rgba(237, 221, 83, 1) 100%);
-                            width: 20px;
-                            height: 20px;
+                            width: 17px;
+                            height: 17px;
                             border-radius: 50%;
                             border: 2px solid #000;
                             box-shadow: 0 3px 10px rgba(0,0,0,0.5);
@@ -509,8 +509,7 @@ const createMap = () => {
                             align-items: center;
                             justify-content: center;
                             color: white;
-                            font-size: 10px;
-                            font-weight: bold;
+                            font-size: 8px;
                             position: relative;
                         ">${index + 1}</div>`,
                         iconSize: [30, 30],
@@ -975,7 +974,6 @@ const handleCheckOut = async () => {
 onMounted(async () => {
     // Start time updates
     updateTime();
-    timeInterval.value = setInterval(updateTime, 1000);
 
     // Load workplace data first
     try {

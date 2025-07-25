@@ -116,7 +116,7 @@
                                 {{ formatDate(attendance.checkin_date) }}
                             </q-item-label>
                             <q-item-label caption class="text-grey-6">
-                                {{ getWorkplaceName(attendance.workplace_id) }}
+                                {{ attendance.workplace?.name }}
                             </q-item-label>
                             <q-item-label caption>
                                 <div class="row items-center q-gutter-xs q-mt-xs">
@@ -186,14 +186,6 @@
 
                     <!-- Details Grid -->
                     <div class="detail-grid">
-                        <!-- Workplace -->
-                        <div class="detail-item">
-                            <q-icon name="business" color="accent" size="sm" />
-                            <div class="detail-content">
-                                <div class="detail-label">Workplace</div>
-                                <div class="detail-value">{{ getWorkplaceName(selectedAttendance.workplace_id) }}</div>
-                            </div>
-                        </div>
 
                         <!-- Check In -->
                         <div class="detail-item" v-if="selectedAttendance.checkin_date">
@@ -265,10 +257,6 @@
                         {{ getStatusMessage(selectedAttendance.status) }}
                     </q-banner>
                 </q-card-section>
-
-                <q-card-actions align="right" class="q-pa-md">
-                    <q-btn flat label="Close" color="primary" @click="showDetailDialog = false" />
-                </q-card-actions>
             </q-card>
         </q-dialog>
     </q-page>
@@ -276,7 +264,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { AttendanceApi, WorkplaceApi } from 'src/api';
+import { AttendanceApi } from 'src/api';
 import { useAuthStore } from 'stores/auth';
 
 const authStore = useAuthStore();
@@ -288,7 +276,6 @@ const user = authStore.user;
 const loading = ref(false);
 const error = ref('');
 const attendanceHistory = ref([]);
-const workplaces = ref({});
 const showDetailDialog = ref(false);
 const selectedAttendance = ref(null);
 
@@ -322,49 +309,18 @@ const loadAttendanceHistory = async () => {
             sort: { checkin_date: -1 } // Most recent first
         });
 
-        attendanceHistory.value = response.data || [];
-
-        // Load workplace information for each attendance
-        await loadWorkplaceInfo();
+        attendanceHistory.value = response.data.map(m=>{
+            if(m.is_checkin_valid && m.is_checkout_valid) m.status = 'valid';
+            else m.status = 'waiting_approval';
+            return m;
+        }) || [];
+        
 
     } catch (err) {
         console.error('Error loading attendance history:', err);
         error.value = err.response?.data?.message || 'Failed to load attendance history';
     } finally {
         loading.value = false;
-    }
-};
-
-const loadWorkplaceInfo = async () => {
-    try {
-        // Get unique workplace IDs
-        const workplaceIds = [...new Set(
-            attendanceHistory.value
-                .map(a => a.workplace_id)
-                .filter(id => id)
-        )];
-
-        if (workplaceIds.length === 0) return;
-
-        // Load workplace data
-        const { data } = await WorkplaceApi.getWorkplace({
-            params: {
-                filter: { _id: { $in: workplaceIds } },
-                select: 'name address'
-            }
-        });
-
-        // Create workplace lookup object
-        const workplaceMap = {};
-        (data || []).forEach(workplace => {
-            workplaceMap[workplace._id] = workplace;
-        });
-
-        workplaces.value = workplaceMap;
-
-    } catch (error) {
-        console.error('Error loading workplace info:', error);
-        // Don't show error to user, workplace names will just show as IDs
     }
 };
 
@@ -414,13 +370,6 @@ const formatCoordinates = (coordinate) => {
     return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 };
 
-const getWorkplaceName = (workplaceId) => {
-    if (!workplaceId) return 'Unknown Workplace';
-    
-    const workplace = workplaces.value[workplaceId];
-    return workplace?.name || 'Unknown Workplace';
-};
-
 const getWorkingHours = (attendance) => {
     if (!attendance.checkin_date || !attendance.checkout_date) {
         return 'Incomplete';
@@ -445,7 +394,7 @@ const getStatusColor = (status) => {
     switch (status) {
         case 'valid': return 'positive';
         case 'invalid': return 'negative';
-        case 'pending': return 'warning';
+        case 'waiting_approval': return 'warning';
         default: return 'warning'; // Default to pending
     }
 };
@@ -454,7 +403,7 @@ const getStatusIcon = (status) => {
     switch (status) {
         case 'valid': return 'check_circle';
         case 'invalid': return 'cancel';
-        case 'pending': return 'schedule';
+        case 'waiting_approvel': return 'schedule';
         default: return 'schedule';
     }
 };
@@ -463,8 +412,7 @@ const getStatusLabel = (status) => {
     switch (status) {
         case 'valid': return 'Valid';
         case 'invalid': return 'Invalid';
-        case 'pending': return 'Pending';
-        default: return 'Pending';
+        case 'waiting_approval': return 'Waiting Approval';
     }
 };
 
@@ -480,7 +428,7 @@ const getStatusAvatarClass = (status) => {
 const getStatusMessage = (status) => {
     switch (status) {
         case 'valid': 
-            return 'This attendance record has been validated and approved.';
+            return 'This attendance record has been validated or approved.';
         case 'invalid': 
             return 'This attendance record has been rejected or marked as invalid.';
         case 'pending': 

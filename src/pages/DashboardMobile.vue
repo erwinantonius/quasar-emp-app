@@ -26,6 +26,29 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Notification Bell -->
+                        <div class="notification-container">
+                            <q-btn
+                                flat
+                                round
+                                icon="notifications"
+                                color="white"
+                                size="md"
+                                @click="goToInbox"
+                                class="notification-btn"
+                            >
+                                <q-badge
+                                    v-if="unreadInboxCount > 0"
+                                    color="negative"
+                                    floating
+                                    rounded
+                                >
+                                    {{ unreadInboxCount > 99 ? '99+' : unreadInboxCount }}
+                                </q-badge>
+                                <q-tooltip>View Inbox ({{ unreadInboxCount }} unread)</q-tooltip>
+                            </q-btn>
+                        </div>
                     </div>
                 </div>
             </q-card>
@@ -83,7 +106,6 @@
                 <q-icon name="flash_on" class="q-mr-sm" />
                 Quick Actions
             </div>
-            
             <div v-if="myMenu.length">
                 <div v-for="(menu, i) in myMenu" :key="i" class="q-mb-lg">
                     <div class="text-subtitle1 text-weight-medium text-grey-7 q-mb-md q-ml-sm">
@@ -151,14 +173,14 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useUserStore } from 'stores/user';
 import { useAuthStore } from 'stores/auth';
 import { menu_mobile } from 'src/config/menus.js';
 import { groupArray, titleCase } from 'src/helpers';
-import { TenantApi, AttendanceApi } from 'src/api';
+import { TenantApi, AttendanceApi, InboxApi } from 'src/api';
 
 const router = useRouter();
 const $q = useQuasar();
@@ -182,7 +204,7 @@ const todaySummary = ref({
     workingHours: '0h 0m'
 });
 
-const attendanceRefreshInterval = ref(null);
+const unreadInboxCount = ref(0);
 
 const recentActivities = ref([
     {
@@ -207,7 +229,7 @@ const recentActivities = ref([
 
 
 
-const myMenu = computed(() =>
+const myMenu = computed(() => 
     groupArray(
         menu_mobile
             .map((m) => {
@@ -270,16 +292,36 @@ const goToProfile = () => {
     router.push('/profile');
 };
 
-const fetchTenantInfo = async () => {
-    console.log('Fetching tenant info...');
-    console.log(profile.value);
+const goToInbox = () => {
+    router.push('/inbox');
+};
+
+const fetchUnreadInboxCount = async () => {
     try {
+        const response = await InboxApi.getUnreadCount();
+        unreadInboxCount.value = response.data?.count || 0;
+    } catch (error) {
+        console.error('Error fetching unread inbox count:', error);
+        // Don't show error notification for this, it's not critical
+        unreadInboxCount.value = 0;
+    }
+};
+
+const fetchTenantInfo = async () => {
+    try {
+        console.log('fetchTenantInfo called, profile.value:', profile.value);
+        console.log('profile.value?.tenant:', profile.value?.tenant);
+        
         if (profile.value?.tenant) {
+            console.log('Fetching tenant with ID:', profile.value.tenant);
             const { data } = await TenantApi.getTenantById(profile.value.tenant);
             if (data) {
                 tenantInfo.value = data;
+                console.log('Tenant info loaded:', data);
                 return;
             }
+        } else {
+            console.log('No tenant ID in profile, skipping tenant fetch');
         }
     } catch (error) {
         console.error('Error fetching tenant info:', error);
@@ -419,11 +461,7 @@ const fetchUserStats = async () => {
 const initializeDashboard = async () => {
     $q.loading.show();
     try {
-        await userStore.whoAmI();
-        await Promise.all([
-            fetchTenantInfo(),
-            fetchUserStats()
-        ]);
+        await fetchUnreadInboxCount()
     } catch (error) {
         console.error('Error initializing dashboard:', error);
         $q.notify({
@@ -445,20 +483,20 @@ const avatarUrl = computed(() => {
   return '';
 });
 
+watch(profile, (newProfile, oldProfile) => {
+    // Trigger data fetch saat profile pertama kali ter-load
+    if (newProfile && !oldProfile) {
+        fetchTenantInfo();
+        fetchUserStats();
+    }
+}, { immediate: true });
+
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
     initializeDashboard();
-    
-    // Set up auto-refresh for attendance data every 5 minutes
-    attendanceRefreshInterval.value = setInterval(() => {
-        fetchTodayAttendance();
-    }, 5 * 60 * 1000); // 5 minutes
 });
 
 onUnmounted(() => {
-    if (attendanceRefreshInterval.value) {
-        clearInterval(attendanceRefreshInterval.value);
-    }
 });
 
 </script>
@@ -500,6 +538,24 @@ onUnmounted(() => {
   
   &:active {
     transform: scale(0.98);
+  }
+}
+
+// Notification bell styling
+.notification-container {
+  position: relative;
+}
+
+.notification-btn {
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  &:active {
+    transform: scale(0.95);
   }
 }
 

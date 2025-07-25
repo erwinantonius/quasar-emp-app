@@ -24,6 +24,18 @@ const routes = [
     ],
   },
   {
+    path: '/inbox',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'inbox',
+        path: '',
+        component: () => import('pages/Inbox/InboxPage.vue'),
+        meta: { requireAuth: true },
+      },
+    ],
+  },
+  {
     path: '/attendance',
     component: () => import('layouts/MainLayout.vue'),
     children: [

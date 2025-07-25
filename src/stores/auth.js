@@ -30,15 +30,11 @@ export const useAuthStore = defineStore('auth', {
      * logout reset app store
      */
     async login (payload) {
-      try {
-        const { data } = await AuthApi.signIn(payload)
-        this.setPermission(data.permission)
-        this.setToken(data.access_token)
-        this.setUser({ ...data })
-        return true
-      } catch (err) {
-        throw err?.response?.data?.message || err
-      }
+      const { data } = await AuthApi.signIn(payload)
+      this.setPermission(data.permission)
+      this.setToken(data.access_token)
+      this.setUser({ ...data })
+      return true
     },
     logout () {
       getActivePinia()._s.forEach((store) => store.$reset())

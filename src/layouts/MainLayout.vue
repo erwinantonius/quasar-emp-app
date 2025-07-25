@@ -34,6 +34,27 @@
                         title="light/dark"
                     />
 
+                    <!-- Notification Bell -->
+                    <q-btn
+                        round
+                        flat
+                        dense
+                        icon="notifications"
+                        color="primary"
+                        @click="goToInbox"
+                        title="Inbox"
+                    >
+                        <q-badge
+                            v-if="unreadInboxCount > 0"
+                            color="negative"
+                            floating
+                            rounded
+                        >
+                            {{ unreadInboxCount > 99 ? '99+' : unreadInboxCount }}
+                        </q-badge>
+                        <q-tooltip>Inbox ({{ unreadInboxCount }} unread)</q-tooltip>
+                    </q-btn>
+
                     <q-btn round dense>
                         <q-avatar v-if="profile" size="30px" @click="goToProfile()">
                             <img :src="avatarUrl" :title="profile.fullname" />
@@ -172,6 +193,7 @@ import { useQuasar } from 'quasar';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { FIREBASE_CONFIG } from 'src/config/firebase';
 import { UserApi } from 'src/api';
+import { InboxApi } from 'src/api/inbox';
 
 import { messaging } from 'boot/firebase';
 import { onMessage } from 'firebase/messaging';
@@ -221,6 +243,25 @@ const miniState = computed(() => settingStore.miniState);
 const currentAppVersion = computed(() => settingStore.appVersion);
 // const notifications = ref([]);
 const app_version = ref(APP_VERSION);
+const unreadInboxCount = ref(0);
+
+// Fetch unread inbox count
+const fetchUnreadInboxCount = async () => {
+    try {
+        const response = await InboxApi.getUnreadCount();
+        if (response.data && typeof response.data.count === 'number') {
+            unreadInboxCount.value = response.data.count;
+        }
+    } catch (error) {
+        console.error('Error fetching unread inbox count:', error);
+        unreadInboxCount.value = 0;
+    }
+};
+
+// Navigate to inbox page
+const goToInbox = () => {
+    router.push({ name: 'inbox' });
+};
 
 // Get registration token. Initially this makes a network call, once retrieved
 // subsequent calls to getToken will return from cache.
@@ -337,12 +378,17 @@ onBeforeMount(async () => {
             classes: 'glossy',
         });
     });
-    await userStore.whoAmI();
+    
+    
+    
 });
 
 onMounted(async () => {
+    await userStore.whoAmI();
     $q.dark.set(settingStore.darkTheme);
     checkVersion();
-    // await getNotif();
+    // Fetch initial unread count
+    await fetchUnreadInboxCount();
+    
 });
 </script>

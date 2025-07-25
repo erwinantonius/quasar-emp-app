@@ -3,20 +3,17 @@ import { AxiosError } from "axios";
 // utils/errorHandler.ts
 export const getErrorMessage = (error): string => {
     let errorMessage = 'An unexpected error occurred';
-    if (error && typeof error === 'object' && 'response' in error) {
-        const httpError = error as { response: { data: { message: string } } };
-        return httpError.response?.data?.message || 'Request failed';
+    switch (error.status) {
+        case 401:
+            errorMessage = 'Unauthorized access. Please log in again.';
+            break;
+        case 403:
+            errorMessage = 'Forbidden access. You do not have permission to perform this action.';
+            break;
+        case 400:
+            errorMessage = 'Bad request. Please check your input and try again.';
+        default:
+            break;
     }
-
-    if (error instanceof AxiosError) {
-        errorMessage = error.response?.data?.message || error.message;
-    } else if (error instanceof Error) {
-        errorMessage = error.message;
-    }
-
-    if (error instanceof Error) {
-        return error.message;
-    }
-
     return errorMessage;
 };
